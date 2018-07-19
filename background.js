@@ -7,7 +7,7 @@ function connected(p) {
   myPort.onMessage.addListener(function(m) {
     if (m.event === "slides") {
       var slides = m.content;
-      alert("About to print" + slides.length + " slides");
+      console.log("About to print" + slides.length + " slides");
       var viewTabUrl = chrome.extension.getURL('output.html?id=' + id++)
       var targetId = null;
       chrome.tabs.onUpdated.addListener(function listener(tabId, changedProps) {
