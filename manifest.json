@@ -1,7 +1,7 @@
 {
-  "name": "DocSend Capture",
+  "name": "DocSend Print",
   "version": "0.2",
-  "description": "Capture DocSend document",
+  "description": "Print a DocSend document",
   "permissions": [
     "<all_urls>",
     "tabs"

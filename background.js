@@ -32,6 +32,7 @@ function connected(p) {
           var view = views[i];
           if (view.location.href == viewTabUrl) {
             view.addSlides(slides);
+            view.printPage();
             break;
           }
         }
@@ -47,5 +48,7 @@ function connected(p) {
 chrome.runtime.onConnect.addListener(connected);
 
 chrome.browserAction.onClicked.addListener(function() {
-  myPort.postMessage({event: "print"});
+  if (myPort) {
+    myPort.postMessage({event: "print"});
+  }
 });
