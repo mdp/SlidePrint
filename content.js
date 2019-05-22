@@ -1,6 +1,5 @@
 'use strict';
 
-
 function getSlideNodes() {
   return document.querySelectorAll("#viewer img.page-view");
 }
@@ -61,3 +60,4 @@ myPort.onMessage.addListener(function(msg) {
     })
   }
 });
+

@@ -1,6 +1,6 @@
 'use strict';
 
-var activeTab, myPort, id = 100;
+var activeTab, myPort, id=100;
 
 function connected(p) {
   myPort = p;
@@ -14,11 +14,7 @@ function connected(p) {
         // We are waiting for the tab we opened to finish loading.
         // Check that the tab's id matches the tab we opened,
         // and that the tab is done loading.
-        if (tabId != targetId || changedProps.status != "complete") {
-          return;
-        }
-
-        // Passing the above test means this is the event we were waiting for.
+        if (tabId != targetId || changedProps.status != "complete") { return; } // Passing the above test means this is the event we were waiting for.
         // There is nothing we need to do for future onUpdated events, so we
         // use removeListner to stop getting called when onUpdated events fire.
         chrome.tabs.onUpdated.removeListener(listener);
@@ -48,7 +44,21 @@ function connected(p) {
 chrome.runtime.onConnect.addListener(connected);
 
 chrome.browserAction.onClicked.addListener(function() {
-  if (myPort) {
-    myPort.postMessage({event: "print"});
-  }
+
+  chrome.tabs.query(
+    { currentWindow: true, active: true },
+    function (tabArray) {
+      activeTab = tabArray[0];
+
+      // Ensure that our current tab is on Docsend, otherwise toss up
+      // an error for the user
+      var url = new URL(activeTab.url);
+      if (!url.hostname.match(/([a-zA-Z\.]*)docsend.com/)) {
+        alert("'" +url.hostname + "' doesn't look like a docsend page :/");
+      } else if (myPort) {
+        myPort.postMessage({event: "print"}); 
+      }
+    }
+  );
+
 });
