@@ -1,5 +1,7 @@
 # Docsend Print
 
+### Print and Capture any DocSend deck or document
+
 ## Installation
 
 1. [Download the latest release](https://github.com/mdp/DocsendPrint/releases) and unzip it somewhere.
