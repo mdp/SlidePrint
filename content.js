@@ -1,7 +1,7 @@
 'use strict';
 
 function getSlideNodes() {
-  return document.querySelectorAll("#viewer img.page-view");
+  return document.querySelectorAll(".viewer_content-container img.page-view");
 }
 
 function getSlides() {
