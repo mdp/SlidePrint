@@ -12,8 +12,8 @@
 
 ## Usage
 
-1. Navigate to the DocSend presentation you want to print (starting at page 1)
-1. Click the DocSend Print button
+1. Navigate to the DocSend or Pitch.com presentation you want to print (starting at page 1)
+1. Click the SlidePrint Print button
 1. When it completes, you will be taken to a new tab containing the a document ready to print
 1. Print or save your document
 
