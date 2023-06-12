@@ -1,26 +1,25 @@
 {
-  "name": "DocSend Print",
+  "manifest_version": 3,
+  "name": "SlidePrint",
   "version": "1.0.0",
-  "description": "Print a DocSend document",
-  "permissions": [
-    "<all_urls>",
-    "tabs"
-  ],
+  "action": {},
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
-  },
-  "content_scripts": [{
-    "matches":["*://*.docsend.com/view/*"],
-    "js":["content.js"],
-    "run_at": "document_idle"
-  }],
-  "browser_action": {
-    "default_icon": "icon.png"
+    "service_worker": "src/background.ts",
+    "type": "module"
   },
   "icons": {
-    "48": "icon.png",
-    "128": "icon_128.png"
+    "48": "icon-48-inactive.png",
+    "128": "icon-128-active.png"
   },
-  "manifest_version": 2
+  "host_permissions": ["https://*.pitch.com/*", "https://*.docsend.com/*"],
+  "permissions": [
+    "tabs",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+        "matches": ["https://*.docsend.com/*", "https://*.pitch.com/*"],
+        "js": ["src/content.ts"]
+    }
+  ]
 }

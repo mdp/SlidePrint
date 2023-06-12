@@ -1,6 +1,6 @@
-# Docsend Print
+# SlidePrint
 
-### Print and Capture any DocSend deck or document
+### Print and Capture any DocSend or Pitch.com deck or document
 
 ## Installation
 
@@ -19,8 +19,12 @@
 
 ## Development Notes
 
+### Setup
+
+- `yarn install`
+
+### Running in development
+
+- Run `yarn dev` and open the dist folder as an unpacked extension
+
 - Logo source: https://logomakr.com/5RMP6n
-
-## Credits
-
-This is a fork of https://github.com/dramsay/docsend-capture
