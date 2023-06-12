@@ -2,9 +2,6 @@ name: Main
 
 on:
   push:
-    tags:
-      - "v*.*.*"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,11 +13,3 @@ jobs:
           node-version: 20
       - run: yarn install --frozen-lockfile
       - run: yarn build
-      - run: mv dist slideprint
-      - uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r release.zip slideprint
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release.zip
