@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SlidePrint",
-  "version": "1.0.0",
+  "version": "2.0.2",
   "action": {},
   "background": {
     "service_worker": "src/background.ts",
@@ -16,6 +16,7 @@
     "tabs",
     "activeTab"
   ],
+  "incognito": "split",
   "content_scripts": [
     {
         "matches": ["https://*.docsend.com/*", "https://*.pitch.com/*"],
