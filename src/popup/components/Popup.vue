@@ -41,7 +41,7 @@ const log = () => {
       </div>
       <div class="mt-6 flex items-center justify-center gap-4">
         <p class="mt-3 text-sm leading-relaxed text-slate-400">
-          <a href="https://github.com/mdp/SlidePrint">Github</a> | <a href="https://github.com/mdp/SlidePrint/blob/main/PRIVACY.md">Privacy Policy</a>
+          <a href="https://github.com/mdp/SlidePrint" target="_blank">Github</a> | <a href="https://github.com/mdp/SlidePrint/blob/main/PRIVACY.md" target="_blank">Privacy Policy</a>
         </p>
       </div>
     </div>
