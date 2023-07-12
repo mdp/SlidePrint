@@ -1,29 +1,21 @@
 import { Slide } from "./types/Slide";
-import { asyncMessageHandler, canPrintMessage, startCaptureMessage } from "./utils/messageHandling";
+import { MessageData, asyncMessageHandler, startCaptureMessage } from "./utils/messageHandling";
+// @ts-ignore
+import scriptPath from './content?script'
 
 let currentSlides: Slide[] = []
 
-export type MessageData = {
-  dimensions?: DOMRect
-  done?: boolean
-}
-
 chrome.runtime.onMessage.addListener(asyncMessageHandler<MessageData>(async (request, _sender) => {
+  const [tab] = await chrome.tabs.query({ active: true });
   if (request.event === 'popup:opened') {
-    const [tab] = await chrome.tabs.query({ active: true });
-    if (tab && tab.url && tab.id) {
-      try {
-        const canPrint = await canPrintMessage(tab.id)
-        return canPrint
-      } catch (e) {
-        console.log("Tab message error", e)
-        return false
-      }
-    } else {
-      return null
+    if (tab && tab.id) {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: [scriptPath]
+      });
+      return true
     }
   } else if (request.event === 'popup:print') {
-    const [tab] = await chrome.tabs.query({ active: true });
     if (tab && tab.url && tab.id) {
       currentSlides = []
       await startCaptureMessage(tab.id)

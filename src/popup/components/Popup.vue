@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import {ref, onMounted, Ref} from 'vue'
 import { printMessage } from '../../utils/messageHandling';
-import { version } from '../../../manifest.json'
+import { version } from '../../../package.json'
+import { findHandlerFor } from '../../handlers';
 
 const isPrintable: Ref<boolean | undefined> = ref(undefined)
 
 onMounted(async () => {
-  const isPrintableResult = await chrome.runtime.sendMessage({event: "popup:opened"})
-  console.log(isPrintableResult)
-  isPrintable.value = isPrintableResult.result
+  await chrome.runtime.sendMessage({event: "popup:opened"})
+  const [tab] = await chrome.tabs.query({ active: true });
+  if (tab && tab.id && tab.url) {
+    isPrintable.value = !!findHandlerFor(tab.url)
+  } else {
+    isPrintable.value = false
+  }
 })
 
 const log = () => {
@@ -45,4 +50,4 @@ const log = () => {
 
 <style>
 
-</style>
+</style>../../../manifest

@@ -1,11 +1,16 @@
-import { MessageData } from "../background"
 import { Slide } from "../types/Slide"
 
-type ValidEvents = 'popup:opened' | 'popup:print' | 'output:ready' | 'content:can-print' | 'content:start-capture' | 'content:capture-page' | 'reset'
+type ValidEvents = 'content:ready' | 'popup:can-print' | 'popup:opened' | 'popup:print' | 'output:ready' | 'content:can-print' | 'content:start-capture' | 'content:capture-page' | 'reset'
 
 interface MessageRequest<T> {
   event: ValidEvents
   data?: T
+}
+
+export type MessageData = {
+  dimensions?: DOMRect
+  done?: boolean
+  canPrint?: boolean
 }
 
 export function asyncMessageHandler<T>
@@ -36,10 +41,6 @@ export async function asyncRuntimeMessage<T, R>(message: MessageRequest<T>): Pro
     } else {
         return result.result
     }
-}
-
-export async function canPrintMessage(tabId:number) {
-    return await asyncTabMessage<void, boolean>(tabId, {event: 'content:can-print'})
 }
 
 export async function printMessage() {
