@@ -15,7 +15,15 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         output: resolve(__dirname, 'src/output/index.html'),
+        popup: resolve(__dirname, 'src/popup/index.html'),
       },
+    },
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      port: 5173,
     },
   },
 })

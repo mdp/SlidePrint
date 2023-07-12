@@ -1,4 +1,5 @@
 import { HandlerFinderFn, HandlerFn } from "."
+import { capturePageMessage } from "../utils/messageHandling"
 import { sendRightArrow } from "../utils/sendKeyEvent"
 import { sleep } from "../utils/sleep"
 
@@ -26,8 +27,8 @@ export const getHandlerFor: HandlerFinderFn = (url: string) => {
 export const handler: HandlerFn = async () => {
     const slideCount = getSlideCount()
     for(let slide=1; slide <= slideCount; slide++) {
-        const dimensions = getDimensions() || null
-        await chrome.runtime.sendMessage({event: 'capture', done: slide === slideCount, dimensions})
+        const dimensions = getDimensions() || undefined
+        await capturePageMessage(slide === slideCount, dimensions)
         sendRightArrow()
         await sleep(600)
     }

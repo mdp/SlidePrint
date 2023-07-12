@@ -2,7 +2,9 @@
   "manifest_version": 3,
   "name": "SlidePrint",
   "version": "1.0.0",
-  "action": {},
+  "action": {
+    "default_popup": "src/popup/index.html"
+  },
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
