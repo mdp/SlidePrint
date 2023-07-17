@@ -1,19 +1,20 @@
 import { findHandlerFor } from './handlers';
+import { asyncMessageHandler } from './utils/messageHandling';
 
-(async () => {
-    const handler = findHandlerFor(window.location.href)
-    chrome.runtime.onMessage.addListener(
-        (request, _sender, sendResponse) => {
-            (async () => {
-                if (request.event === 'print' && handler) {
-                    await handler(window.document)
-                    sendResponse(true)
-                } else {
-                    alert("SlidePrint doesn't support this page")
-                    sendResponse(false)
-                }
-            })();
-            return true;
-        }
-    );
-})();
+const handler = findHandlerFor(window.location.href)
+
+const setup = async () => {
+  chrome.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
+    if (handler) {
+      if (request.event === 'content:start-capture' && handler) {
+        await handler(window.document)
+        return true
+      } else {
+        return false
+      }
+    }
+    return false
+  }))
+};
+
+setup()

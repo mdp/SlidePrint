@@ -1,4 +1,5 @@
 import { Slide } from "../types/Slide";
+import { outputReady } from "../utils/messageHandling";
 
 const cropImage = async (imgUri: string, dimensions: DOMRect): Promise<string> => {
   console.log("Values in crop", dimensions);
@@ -71,6 +72,8 @@ function printPage() {
 }
 
 (async () => {
-    const result = await chrome.runtime.sendMessage({event: "output-ready"})
-    addSlides(result)
+  const result = await outputReady()
+  console.log(result)
+  await addSlides(result)
+  await chrome.runtime.sendMessage({event: "reset"})
 })()
