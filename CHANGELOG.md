@@ -1,3 +1,11 @@
+# 2.1.1
+
+- Fix docsend custom subdomain issue
+
+# 2.1.0
+
+- Move to popup UI and fix manifest v3 permissions
+
 # 2.0.2
 
 - Fix issue in incognito mode 
