@@ -1,13 +1,14 @@
 {
   "name": "slideprint",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "zip": "zip -qq -r release.zip dist",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "dependencies": {
     "autoprefixer": "^10.4.14",
@@ -17,8 +18,11 @@
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.17",
     "@types/chrome": "^0.0.237",
+    "@types/jest": "^29.5.3",
     "@vitejs/plugin-vue": "^4.1.0",
+    "jest": "^29.6.1",
     "tailwindcss": "^3.3.2",
+    "ts-jest": "^29.1.1",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vue-tsc": "^1.4.2"

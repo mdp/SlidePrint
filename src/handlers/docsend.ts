@@ -22,7 +22,7 @@ const getDimensions = () => {
 
 export const getHandlerFor: HandlerFinderFn = (url: string) => {
     // https://docsend.com/view/base32
-    if (url.toLocaleLowerCase().match(/https\:\/\/docsend\.com\/view\/[a-z0-9]+/)) return handler
+    if (url.toLocaleLowerCase().match(/https\:\/\/([a-zA-Z0-9]+\.)?docsend\.com\/view\/[a-z0-9]+/)) return handler
     return null
 }
 
