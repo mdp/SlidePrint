@@ -1,6 +1,6 @@
 # SlidePrint
 
-### Print and Capture any DocSend or Pitch.com deck or document
+### Print and Capture any DocSend, Pitch.com, or Brieflink pitch or deck
 
 <a href="https://chrome.google.com/webstore/detail/slideprint/gjflplfighngkllkdlpggcplnbjpjodc"><img src="https://user-images.githubusercontent.com/585534/107280622-91a8ea80-6a26-11eb-8d07-77c548b28665.png" alt="Install SlidePrint"></a>
 
@@ -14,7 +14,7 @@
 
 ## Usage
 
-1. Navigate to the DocSend or Pitch.com presentation you want to print (starting at page 1)
+1. Navigate to the pitchdeck presentation you want to print (starting at page 1)
 1. Click the SlidePrint Print button
 1. When it completes, you will be taken to a new tab containing the a document ready to print
 1. Print or save your document

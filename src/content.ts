@@ -7,7 +7,11 @@ const setup = async () => {
   chrome.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
     if (handler) {
       if (request.event === 'content:start-capture' && handler) {
-        await handler(window.document)
+        try {
+          await handler(window.document)
+        } catch (e) {
+          console.log("Content Handler Error:", e)
+        }
         return true
       } else {
         return false

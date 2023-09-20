@@ -34,7 +34,7 @@ export default defineManifest(async (env) => ({
   incognito: "split",
   web_accessible_resources: [
     defineDynamicResource({
-      matches: ['https://*.docsend.com/*', 'https://*.pitch.com/*'],
+      matches: ['https://*.docsend.com/*', 'https://*.pitch.com/*', 'https://*.brieflink.com/*'],
     })
   ]
 }))
