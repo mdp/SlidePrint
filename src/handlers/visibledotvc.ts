@@ -1,8 +1,14 @@
 import { HandlerFinderFn, HandlerFn } from "."
 import { capturePageMessage } from "../utils/messageHandling"
 import { fixHiDPI } from "../utils/hidpi"
-import { sendRightArrow } from "../utils/sendKeyEvent"
 import { sleep } from "../utils/sleep"
+
+
+class SpecialKeyboardEvent extends KeyboardEvent {
+  constructor(type: string, keyboardEventInit: KeyboardEventInit & {target: HTMLElement} | undefined) {
+    super(type, keyboardEventInit)
+  }
+}
 
 const getSlideCount = () => {
   const countEl = document.querySelector('button[title="Next page"]')?.previousElementSibling
@@ -16,7 +22,7 @@ const getSlideCount = () => {
 }
 
 const getDimensions = () => {
-  const imageElement = document.querySelectorAll(".item.active .viewer_content-container")[0]
+  const imageElement = document.querySelectorAll("body > div > div > div.flex.flex-shrink-0.py-10 > div")[0]
   if (!imageElement) return null
   return fixHiDPI(imageElement.getClientRects()[0])
 }
@@ -33,7 +39,7 @@ export const handler: HandlerFn = async () => {
     for(let slide=1; slide <= slideCount; slide++) {
         const dimensions = getDimensions() || undefined
         await capturePageMessage(slide === slideCount, dimensions)
-        sendRightArrow()
+        document.dispatchEvent(new SpecialKeyboardEvent('keydown', {'key': 'ArrowRight', 'target': document.body}));
         await sleep(600)
     }
 }

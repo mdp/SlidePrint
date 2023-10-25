@@ -1,3 +1,8 @@
+# 2.3.0
+
+- Add Brieflink and Visible.VC
+- Remove unneeded manifest permisions
+
 # 2.1.1
 
 - Fix docsend custom subdomain issue
