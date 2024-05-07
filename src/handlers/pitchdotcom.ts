@@ -20,8 +20,10 @@ const getDimensions = () => {
 }
 
 export const getHandlerFor: HandlerFinderFn = (url: string) => {
-    // https://pitch.com/public/uuid/uuid
+    // old https://pitch.com/public/uuid/uuid
     if (url.match(/https\:\/\/pitch\.com\/public\/[a-f0-9\-]+/)) return handler
+    // new https://pitch.com/v/name-uid
+    if (url.match(/https\:\/\/pitch\.com\/v\/[a-f0-9\-]+/)) return handler
     return null
 }
 
