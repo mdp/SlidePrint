@@ -14,12 +14,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
-      - run: mv dist slideprint
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm build
+      - run: mv .output/chrome-mv3 release
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release.zip slideprint
+          args: zip -qq -r release.zip release
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
