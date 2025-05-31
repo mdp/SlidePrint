@@ -1,4 +1,3 @@
-import browser from "webextension-polyfill"
 import { Slide } from "../types/Slide"
 
 type ValidEvents = 'content:ready' |
@@ -18,7 +17,7 @@ export type MessageData = {
 }
 
 export function asyncMessageHandler<T>
-    (fn: (request: MessageRequest<T>, sender: browser.Runtime.MessageSender) => Promise<any>): (request: any, sender: browser.Runtime.MessageSender, sendResponse: (response: any) => void) => any {
+    (fn: (request: MessageRequest<T>, sender: chrome.runtime.MessageSender) => Promise<any>): (request: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => any {
         return(request, sender, sendResponse) => {
             console.log("asyncMessageHandler:", request)
             fn(request, sender)
@@ -35,8 +34,8 @@ export function asyncMessageHandler<T>
 }
 
 export async function asyncTabMessage<T, R>(tabId: number, message: MessageRequest<T>): Promise<R> {
-    console.log(browser.tabs.sendMessage)
-    const result = await browser.tabs.sendMessage(tabId, message)
+    console.log(chrome.tabs.sendMessage)
+    const result = await chrome.tabs.sendMessage(tabId, message)
     if (result.error) {
         throw new Error(result.error)
     } else {
@@ -46,7 +45,7 @@ export async function asyncTabMessage<T, R>(tabId: number, message: MessageReque
 
 export async function asyncRuntimeMessage<T, R>(message: MessageRequest<T>): Promise<R> {
     console.log("asyncRuntimeMessage", message)
-    const result = await browser.runtime.sendMessage(message)
+    const result = await chrome.runtime.sendMessage(message)
     if (result.error) {
         throw new Error(result.error)
     } else {

@@ -1,6 +1,5 @@
 import { findHandlerFor } from '../handlers';
 import { asyncMessageHandler } from '../utils/messageHandling';
-import browser from "webextension-polyfill"
 
 export default defineContentScript({
   matches: [],
@@ -8,7 +7,7 @@ export default defineContentScript({
     console.log('Hello content.');
     const handler = findHandlerFor(window.location.href)
 
-    browser.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
+    chrome.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
       if (handler) {
         if (request.event === 'content:start-capture' && handler) {
           try {

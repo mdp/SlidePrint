@@ -3,13 +3,12 @@ import {ref, onMounted, Ref} from 'vue'
 import { printMessage } from '../utils/messageHandling';
 import { version } from '../package.json'
 import { findHandlerFor } from '../handlers';
-import browser from "webextension-polyfill"
 
 const isPrintable: Ref<boolean | undefined> = ref(undefined)
 
 onMounted(async () => {
-  await browser.runtime.sendMessage({event: "popup:opened"})
-  const [tab] = await browser.tabs.query({ active: true });
+  await chrome.runtime.sendMessage({event: "popup:opened"})
+  const [tab] = await chrome.tabs.query({ active: true });
   if (tab && tab.id && tab.url) {
     isPrintable.value = !!findHandlerFor(tab.url)
   } else {

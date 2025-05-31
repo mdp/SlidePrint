@@ -1,3 +1,4 @@
+import { expect, it } from 'vitest'
 import { getHandlerFor } from '../docsend'
 
 it("should work with a docsend url", () => {
