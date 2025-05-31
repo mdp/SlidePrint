@@ -24,7 +24,17 @@ export default defineConfig({
     action: {
       default_title: 'SlidePrint',
     },
+    web_accessible_resources: [
+      {
+        "matches": [
+          "http://*/*",
+          "https://*/*"
+        ],
+        "resources": [
+          "injected.js"
+        ],
+      }
+    ],
     permissions: [ "activeTab", "scripting" ],
-    content_scripts: [],
   },
 });
