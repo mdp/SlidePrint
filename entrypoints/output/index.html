@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <title>SlidePrint Output</title>
+    <style>
+      @media print{
+        @page {
+          size: landscape;
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="output">
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
