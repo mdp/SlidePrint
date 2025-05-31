@@ -1,13 +1,12 @@
 import { findHandlerFor } from '../handlers';
 import { asyncMessageHandler } from '../utils/messageHandling';
 
-export default defineContentScript({
-  matches: [],
+export default defineUnlistedScript({
   main() {
     console.log('Hello content.');
     const handler = findHandlerFor(window.location.href)
 
-    chrome.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
+    browser.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
       if (handler) {
         if (request.event === 'content:start-capture' && handler) {
           try {
@@ -23,5 +22,4 @@ export default defineContentScript({
       return false
     }))
   }
-
 });

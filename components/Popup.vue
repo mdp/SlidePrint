@@ -6,8 +6,8 @@ import { findHandlerFor } from '../handlers/index';
 const isPrintable: Ref<boolean | undefined> = ref(undefined)
 
 onMounted(async () => {
-  await chrome.runtime.sendMessage({event: "popup:opened"})
-  const [tab] = await chrome.tabs.query({ active: true });
+  await browser.runtime.sendMessage({event: "popup:opened"})
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab && tab.id && tab.url) {
     isPrintable.value = !!findHandlerFor(tab.url)
   } else {
@@ -31,7 +31,7 @@ const log = () => {
       </div>
 
       <div class="flex items-center justify-center gap-4">
-        <span v-if="isPrintable == false" class="mt-6 flex items-center justify-center gap-4">
+        <span v-if="isPrintable == false" class="mt-6 flex items-center justify-center gap-4 text-slate-800">
           <h1 class="text-md">It doesn't look like SlidePrint works on this site</h1>
         </span>
         <div v-else-if="isPrintable" class="mt-6 flex items-center justify-center gap-4">
