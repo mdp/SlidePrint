@@ -19,10 +19,10 @@ jobs:
           version: 10
       - run: pnpm install
       - run: pnpm build
-      - run: mv .output/chrome-mv3 release
+      - run: mv .output/chrome-mv3 slideprint
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release.zip release
+          args: zip -qq -r release.zip slideprint
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
