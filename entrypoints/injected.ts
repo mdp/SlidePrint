@@ -3,7 +3,6 @@ import { asyncMessageHandler } from '../utils/messageHandling';
 
 export default defineUnlistedScript({
   main() {
-    console.log('Hello content.');
     const handler = findHandlerFor(window.location.href)
 
     browser.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
