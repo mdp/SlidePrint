@@ -24,6 +24,9 @@ export default defineConfig({
     action: {
       default_title: 'SlidePrint',
     },
+    side_panel: {
+      default_path: "/sidepanel.html",
+    },
     web_accessible_resources: [
       {
         "matches": [
@@ -35,6 +38,15 @@ export default defineConfig({
         ],
       }
     ],
-    permissions: [ "activeTab", "scripting" ],
+    permissions: [ "activeTab", "scripting", "storage" ],
+    host_permissions: ["<all_urls>"],
+    commands: {
+      "toggle-sidepanel-select": {
+        description: "Open side panel and select area",
+        suggested_key: {
+          default: "Alt+Shift+S"
+        }
+      }
+    },
   },
 });

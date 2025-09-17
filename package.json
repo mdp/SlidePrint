@@ -18,14 +18,14 @@
   "dependencies": {
   },
   "devDependencies": {
-    "@wxt-dev/module-vue": "^1.0.2",
-    "typescript": "5.6.3",
-    "vue-tsc": "^2.2.10",
-    "wxt": "^0.20.6",
-    "@tailwindcss/vite": "^4.1.8",
-    "@types/chrome": "^0.0.326",
-    "tailwindcss": "^4.1.8",
-    "vitest": "^3.1.4",
-    "vue": "^3.5.13"
+    "@wxt-dev/module-vue": "^1.0.3",
+    "typescript": "5.9.2",
+    "vue-tsc": "^3.0.7",
+    "wxt": "^0.20.11",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/chrome": "^0.1.12",
+    "tailwindcss": "^4.1.13",
+    "vitest": "^3.2.4",
+    "vue": "^3.5.21"
   }
 }

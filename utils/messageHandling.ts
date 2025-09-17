@@ -2,8 +2,8 @@ import { Slide } from "../types/Slide"
 
 type ValidEvents = 'content:ready' |
     'popup:can-print' | 'popup:opened' | 'popup:print' | 'output:ready' | 'content:can-print' | 'content:start-capture' | 'content:capture-page' |
-    'content:capture-snapshot' |
-    'reset'
+    'content:capture-snapshot' | 'content:select-area' |
+    'open:output' | 'output:opened' | 'reset' | 'slides:remove' | 'slides:move' | 'auto:capture'
 
 interface MessageRequest<T> {
   event: ValidEvents
@@ -73,4 +73,24 @@ export async function capturePageMessage(done: boolean, dimensions?: DOMRect) {
 
 export async function outputReady() {
     return await asyncRuntimeMessage<void, Slide[]>({ event: 'output:ready'})
+}
+
+export async function selectArea(tabId: number): Promise<DOMRect> {
+    return await asyncTabMessage<void, DOMRect>(tabId, { event: 'content:select-area' })
+}
+
+export async function openOutput() {
+    return await asyncRuntimeMessage<void, void>({ event: 'open:output' })
+}
+
+export async function removeSlide(index: number) {
+    return await asyncRuntimeMessage<{ index: number }, Slide[]>({ event: 'slides:remove', data: { index } })
+}
+
+export async function moveSlide(from: number, to: number) {
+    return await asyncRuntimeMessage<{ from: number, to: number }, Slide[]>({ event: 'slides:move', data: { from, to } })
+}
+
+export async function autoCapture() {
+    return await asyncRuntimeMessage<void, void>({ event: 'auto:capture' })
 }

@@ -27,5 +27,17 @@
 
 ### Running in development
 
-- Run `yarn dev` and open the dist folder as an unpacked extension
+- Run `pnpm dev` and load the unpacked extension from `.output/chromium-mv3/`.
 
+### Usage (Chrome)
+
+- Click the extension icon to open the side panel.
+- Click "Select Area" and drag over the portion of the page to capture.
+- Navigate your slides/pages and click "Capture" for each.
+- Click "Open Output" to review and print or save as PDF.
+
+Keyboard shortcut: Press Alt+Shift+S to open the side panel and start selection (configurable in chrome://extensions/shortcuts).
+
+Notes
+- The extension cannot inject on Chrome internal pages (chrome://) or the Chrome Web Store.
+- Host permissions are enabled for all sites to support one-click selection and capture.
