@@ -75,5 +75,4 @@ function printPage() {
   const result = await outputReady()
   console.log(result)
   await addSlides(result)
-  await browser.runtime.sendMessage({event: "reset"})
 })()

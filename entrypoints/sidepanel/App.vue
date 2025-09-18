@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture } from '../../utils/messageHandling'
 import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
@@ -131,6 +131,35 @@ onMounted(async () => {
     })
   }
   await refreshSlides()
+
+  // Keep auto-capture support in sync with the active tab without injecting anything
+  const updateAutoSupportFromActiveTab = async () => {
+    try {
+      const [active] = await browser.tabs.query({ active: true, currentWindow: true })
+      if (active?.url) {
+        isAutoSupported.value = !!findHandlerFor(active.url)
+      } else {
+        isAutoSupported.value = false
+      }
+    } catch {
+      isAutoSupported.value = false
+    }
+  }
+
+  const handleActivated = async () => { await updateAutoSupportFromActiveTab() }
+  const handleUpdated = async (_tabId: number, _changeInfo: any, tab: any) => {
+    try {
+      if (tab?.active) await updateAutoSupportFromActiveTab()
+    } catch {}
+  }
+
+  try { browser.tabs.onActivated.addListener(handleActivated) } catch {}
+  try { browser.tabs.onUpdated.addListener(handleUpdated) } catch {}
+
+  onUnmounted(() => {
+    try { browser.tabs.onActivated.removeListener(handleActivated) } catch {}
+    try { browser.tabs.onUpdated.removeListener(handleUpdated) } catch {}
+  })
 })
 
 async function onDelete(i: number) {

@@ -24,11 +24,6 @@ export default defineBackground(() => {
       // @ts-ignore
       chrome.action.onClicked.addListener(async (tab) => {
         try {
-          if (tab?.id) {
-            await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] })
-          }
-        } catch {}
-        try {
           // @ts-ignore
           if (chrome.sidePanel) {
             // @ts-ignore
@@ -53,13 +48,9 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener(asyncMessageHandler<MessageData>(async (request, _sender) => {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (request.event === 'sidepanel:opened') {
-      if (tab && tab.id) {
-        await browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['injected.js']
-        });
-        return true
-      }
+      // Clear slides at side panel open (fresh session)
+      currentSlides = []
+      return true
     } else if (request.event === 'auto:capture') {
       if (tab && tab.id) {
         currentSlides = []
