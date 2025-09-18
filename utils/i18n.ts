@@ -1,8 +1,9 @@
 import en from '../locales/en.json'
-import zhTW from '../locales/zh_TW.json'
+import zhCN from '../locales/zh_CN.json'
+import de from '../locales/de.json'
 
-type LocaleCode = 'en' | 'zh_TW'
-const DICTS: Record<LocaleCode, Record<string, string>> = { en, zh_TW: zhTW }
+type LocaleCode = 'en' | 'zh_CN' | 'de'
+const DICTS: Record<LocaleCode, Record<string, string>> = { en, zh_CN: zhCN, de }
 
 let overrideLocale: LocaleCode | null = null
 
@@ -33,12 +34,12 @@ export async function initI18n() {
     // @ts-ignore
     const stored = await browser?.storage?.local?.get('localeOverride')
     const value = stored?.localeOverride as LocaleCode | undefined
-    if (value === 'en' || value === 'zh_TW') overrideLocale = value
+    if (value === 'en' || value === 'zh_CN' || value === 'de') overrideLocale = value
     // @ts-ignore
     browser?.storage?.onChanged?.addListener?.((changes: any, area: any) => {
       if (area !== 'local' || !changes?.localeOverride) return
       const next = changes.localeOverride.newValue as LocaleCode | null
-      if (next === 'en' || next === 'zh_TW') overrideLocale = next
+      if (next === 'en' || next === 'zh_CN' || next === 'de') overrideLocale = next
       else overrideLocale = null
     })
   } catch {}

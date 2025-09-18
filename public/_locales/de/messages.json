@@ -1,0 +1,36 @@
+{
+  "button_selectArea": { "message": "Bereich auswählen" },
+  "button_capture": { "message": "Aufnehmen" },
+  "button_clear": { "message": "Leeren" },
+  "button_printSave": { "message": "Drucken/Speichern" },
+  "button_autoCapture": { "message": "Autoaufnahme" },
+
+  "tooltip_openPanelSelect": { "message": "Popup öffnen + Bereich auswählen" },
+  "tooltip_shiftK": { "message": "Auf der Seite: Umschalt+K zum Aufnehmen" },
+
+  "instr_auto_step1": { "message": "Klicken Sie auf <b>Autoaufnahme</b>, um alle Folien automatisch aufzunehmen." },
+  "instr_auto_stepManual1": { "message": "Alternativ manuell: Klicken Sie auf <b>Bereich auswählen</b> und ziehen Sie auf der Seite (Esc zum Abbrechen)." },
+  "instr_auto_stepManual2": { "message": "Navigieren Sie dann und klicken Sie für jede Folie auf <b>Aufnehmen</b> (oder drücken Sie auf der Seite <b>Umschalt+K</b>)." },
+  "instr_auto_step4": { "message": "Unten neu anordnen oder löschen, dann <b>Drucken / Speichern</b>." },
+
+  "instr_manual_step1": { "message": "Klicken Sie auf <b>Bereich auswählen</b> und ziehen Sie auf der Seite (Esc zum Abbrechen)." },
+  "instr_manual_step2": { "message": "Navigieren Sie und klicken Sie für jede Folie auf <b>Aufnehmen</b> (oder drücken Sie auf der Seite <b>Umschalt+K</b>)." },
+  "instr_manual_step3": { "message": "Unten neu anordnen oder löschen, dann <b>Drucken / Speichern</b>." },
+
+  "empty_noSlides": { "message": "Noch keine Folien aufgenommen." },
+  "empty_howTo": { "message": "Klicken Sie auf Bereich auswählen, ziehen Sie auf der Seite und klicken Sie dann Aufnehmen für jede Folie." },
+
+  "overlay_hint": { "message": "Ziehen, um einen Bereich auszuwählen. Esc zum Abbrechen." },
+
+  "auto_status": {
+    "message": "Automatische Aufnahme… $1/$2",
+    "placeholders": { "current": { "content": "$1" }, "total": { "content": "$2" } }
+  },
+  "auto_done": { "message": "Autoaufnahme abgeschlossen" },
+
+  "warning_cannotSelectOnPage": { "message": "Auf dieser Seite kann kein Bereich ausgewählt werden" },
+  "label_language": { "message": "Sprache" },
+  "lang_en": { "message": "Englisch" },
+  "lang_zh_CN": { "message": "Vereinfachtes Chinesisch" },
+  "lang_de": { "message": "Deutsch" }
+}

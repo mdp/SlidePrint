@@ -1,0 +1,34 @@
+{
+  "button_selectArea": "Bereich auswählen",
+  "button_capture": "Aufnehmen",
+  "button_clear": "Leeren",
+  "button_printSave": "Drucken/Speichern",
+  "button_autoCapture": "Autoaufnahme",
+
+  "tooltip_openPanelSelect": "Popup öffnen + Bereich auswählen",
+  "tooltip_shiftK": "Auf der Seite: Umschalt+K zum Aufnehmen",
+
+  "instr_auto_step1": "Klicken Sie auf <b>Autoaufnahme</b>, um alle Folien automatisch aufzunehmen.",
+  "instr_auto_stepManual1": "Alternativ manuell: Klicken Sie auf <b>Bereich auswählen</b> und ziehen Sie auf der Seite (Esc zum Abbrechen).",
+  "instr_auto_stepManual2": "Navigieren Sie dann und klicken Sie für jede Folie auf <b>Aufnehmen</b> (oder drücken Sie auf der Seite <b>Umschalt+K</b>).",
+  "instr_auto_step4": "Unten neu anordnen oder löschen, dann <b>Drucken / Speichern</b>.",
+
+  "instr_manual_step1": "Klicken Sie auf <b>Bereich auswählen</b> und ziehen Sie auf der Seite (Esc zum Abbrechen).",
+  "instr_manual_step2": "Navigieren Sie und klicken Sie für jede Folie auf <b>Aufnehmen</b> (oder drücken Sie auf der Seite <b>Umschalt+K</b>).",
+  "instr_manual_step3": "Unten neu anordnen oder löschen, dann <b>Drucken / Speichern</b>.",
+
+  "empty_noSlides": "Noch keine Folien aufgenommen.",
+  "empty_howTo": "Klicken Sie auf Bereich auswählen, ziehen Sie auf der Seite und klicken Sie dann Aufnehmen für jede Folie.",
+
+  "overlay_hint": "Ziehen, um einen Bereich auszuwählen. Esc zum Abbrechen.",
+
+  "auto_status": "Automatische Aufnahme… $1/$2",
+  "auto_done": "Autoaufnahme abgeschlossen",
+
+  "warning_cannotSelectOnPage": "Auf dieser Seite kann kein Bereich ausgewählt werden",
+
+  "label_language": "Sprache",
+  "lang_en": "Englisch",
+  "lang_zh_CN": "Vereinfachtes Chinesisch",
+  "lang_de": "Deutsch"
+}

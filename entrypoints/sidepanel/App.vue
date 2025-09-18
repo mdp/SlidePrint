@@ -17,7 +17,7 @@ let autoInterval: number | null = null
 const dragIndex = ref<number | null>(null)
 const overIndex = ref<number | null>(null)
 const { t } = useT()
-const selectedLang = ref<'en' | 'zh_TW' | ''>('')
+const selectedLang = ref<'en' | 'zh_CN' | ''>('')
 const needsPermission = ref(false)
 const pendingAction = ref<null | 'select' | 'auto' | 'capture'>(null)
 
@@ -136,7 +136,7 @@ onMounted(async () => {
   await initI18n()
   try {
     const stored = await browser.storage.local.get('localeOverride')
-    const value = stored?.localeOverride as 'en' | 'zh_TW' | undefined
+    const value = stored?.localeOverride as 'en' | 'zh_CN' | undefined
     selectedLang.value = value || ''
   } catch {}
   await browser.runtime.sendMessage({ event: 'sidepanel:opened' })
@@ -247,12 +247,12 @@ async function doAutoCapture() {
 }
 
 function onLangChange(e: Event) {
-  const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_TW' | ''
+  const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_CN' | ''
   selectedLang.value = val
   setLocaleOverride(val || null)
 }
 
-function setLang(val: 'en' | 'zh_TW') {
+function setLang(val: 'en' | 'zh_CN') {
   selectedLang.value = val
   setLocaleOverride(val)
 }
@@ -313,9 +313,9 @@ async function requestSitePermission() {
           <span class="px-0.5">|</span>
           <button
             class="px-1 py-0.5 rounded hover:bg-slate-100"
-            :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_TW' }"
-            :title="t('lang_zh_TW')"
-            @click="setLang('zh_TW')"
+            :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_CN' }"
+            :title="t('lang_zh_CN')"
+            @click="setLang('zh_CN')"
           >中</button>
         </div>
         <div class="mt-1 grid grid-cols-1 md:grid-cols-[1fr_auto] md:items-start gap-2">

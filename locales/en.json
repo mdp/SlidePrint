@@ -29,5 +29,6 @@
 
   "label_language": "Language",
   "lang_en": "English",
-  "lang_zh_TW": "Traditional Chinese"
+  "lang_zh_CN": "Simplified Chinese",
+  "lang_de": "German"
 }

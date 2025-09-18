@@ -1,0 +1,38 @@
+{
+  "button_selectArea": { "message": "选择区域" },
+  "button_capture": { "message": "捕获" },
+  "button_clear": { "message": "清除" },
+  "button_printSave": { "message": "打印/保存" },
+  "button_autoCapture": { "message": "自动捕获" },
+
+  "tooltip_openPanelSelect": { "message": "打开弹窗并选择区域" },
+  "tooltip_shiftK": { "message": "在页面上按 Shift+K 进行捕获" },
+
+  "instr_auto_step1": { "message": "点击<b>自动捕获</b>以自动捕获所有幻灯片。" },
+  "instr_auto_stepManual1": { "message": "或者手动：点击<b>选择区域</b>，在页面上拖动（Esc 取消）。" },
+  "instr_auto_stepManual2": { "message": "然后浏览页面并为每页点击<b>捕获</b>（或在页面上按<b>Shift+K</b>）。" },
+  "instr_auto_step4": { "message": "在下方重新排序或删除，然后<b>打印 / 保存</b>。" },
+
+  "instr_manual_step1": { "message": "点击<b>选择区域</b>，在页面上拖动（Esc 取消）。" },
+  "instr_manual_step2": { "message": "浏览页面并为每页点击<b>捕获</b>（或在页面上按<b>Shift+K</b>）。" },
+  "instr_manual_step3": { "message": "在下方重新排序或删除，然后<b>打印 / 保存</b>。" },
+
+  "empty_noSlides": { "message": "还没有捕获任何幻灯片。" },
+  "empty_howTo": { "message": "点击选择区域，在页面上拖动，然后为每页点击捕获。" },
+
+  "overlay_hint": { "message": "拖动以选择区域。按 Esc 取消。" },
+
+  "auto_status": {
+    "message": "自动捕获中… $1/$2",
+    "placeholders": { "current": { "content": "$1" }, "total": { "content": "$2" } }
+  },
+  "auto_done": { "message": "自动捕获完成" },
+
+  "warning_cannotSelectOnPage": { "message": "此页面无法选择区域" },
+
+  "label_language": { "message": "语言" },
+  "lang_en": { "message": "英语" },
+  "lang_zh_CN": { "message": "简体中文" },
+  "lang_de": { "message": "德语" }
+}
+

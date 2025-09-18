@@ -17,7 +17,7 @@ let autoInterval: number | null = null
 const dragIndex = ref<number | null>(null)
 const overIndex = ref<number | null>(null)
 const { t } = useT()
-const selectedLang = ref<'en' | 'zh_TW' | ''>('')
+const selectedLang = ref<'en' | 'zh_CN' | 'de' | ''>('')
 const needsPermission = ref(false)
 const pendingAction = ref<null | 'select' | 'auto' | 'capture'>(null)
 
@@ -58,10 +58,9 @@ async function doSelect() {
 }
 
 async function doCapture() {
-  if (!selection.value) return
   busy.value = true
   try {
-    await capturePageMessage(false, selection.value)
+    await capturePageMessage(false, selection.value || undefined)
     await refreshSlides()
   } finally {
     busy.value = false
@@ -107,7 +106,7 @@ onMounted(async () => {
   await initI18n()
   try {
     const stored = await browser.storage.local.get('localeOverride')
-    const value = stored?.localeOverride as 'en' | 'zh_TW' | undefined
+    const value = stored?.localeOverride as 'en' | 'zh_CN' | 'de' | undefined
     selectedLang.value = value || ''
   } catch {}
   // Notify background popup opened to prepare offscreen
@@ -190,8 +189,8 @@ async function doAutoCapture() {
   }
 }
 
-function setLang(val: 'en' | 'zh_TW') { selectedLang.value = val; setLocaleOverride(val) }
-function onLangChange(e: Event) { const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_TW' | ''; selectedLang.value = val; setLocaleOverride(val || null) }
+function setLang(val: 'en' | 'zh_CN' | 'de') { selectedLang.value = val; setLocaleOverride(val) }
+function onLangChange(e: Event) { const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_CN' | 'de' | ''; selectedLang.value = val; setLocaleOverride(val || null) }
 
 async function requestSitePermission() {
   try {
@@ -237,7 +236,9 @@ async function requestSitePermission() {
         <div class="absolute right-3 top-2 text-xs text-slate-600 select-none">
           <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'en' }" title="English" @click="setLang('en')">en</button>
           <span class="px-0.5">|</span>
-          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_TW' }" :title="t('lang_zh_TW')" @click="setLang('zh_TW')">中</button>
+          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'de' }" :title="t('lang_de')" @click="setLang('de')">de</button>
+          <span class="px-0.5">|</span>
+          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_CN' }" :title="t('lang_zh_CN')" @click="setLang('zh_CN')">中</button>
         </div>
         <div class="mt-1 grid grid-cols-1 md:grid-cols-[1fr_auto] md:items-start gap-2">
           <ol v-if="isAutoSupported" class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
@@ -253,12 +254,12 @@ async function requestSitePermission() {
           </ol>
           <div class="flex gap-2 md:justify-end">
             <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-brand)] text-white shadow-sm hover:bg-[var(--color-brand-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doSelect">{{ t('button_selectArea') }}</button>
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !selection" @click="doCapture" :title="t('tooltip_shiftK')">
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doCapture" :title="t('tooltip_shiftK')">
               <svg v-if="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
               <span>{{ t('button_capture') }} (Shift+K)</span>
             </button>
             <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doClear">{{ t('button_clear') }}</button>
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doFinish">{{ t('button_printSave') }}</button>
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !slides.length" @click="doFinish">{{ t('button_printSave') }}</button>
           </div>
         </div>
 

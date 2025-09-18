@@ -32,5 +32,6 @@
   ,
   "label_language": { "message": "Language" },
   "lang_en": { "message": "English" },
-  "lang_zh_TW": { "message": "Traditional Chinese" }
+  "lang_zh_CN": { "message": "Simplified Chinese" },
+  "lang_de": { "message": "German" }
 }
