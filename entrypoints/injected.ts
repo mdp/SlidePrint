@@ -17,8 +17,9 @@ export default defineUnlistedScript({
       },
       'content:select-area': async () => {
         const rect = await createSelectionOverlay()
-        const fixed = fixHiDPI(rect)
-        return fixed
+        // Don't apply HiDPI scaling to selection coordinates - they're already in CSS pixels
+        // and will be used for cropping which expects CSS pixel coordinates
+        return rect
       },
       'content:ready': async () => true as const,
       'content:get-counts': async () => {

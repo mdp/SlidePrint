@@ -4,14 +4,78 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SlidePrint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       html, body { margin: 0; padding: 0; }
       /* Increase popup size for better usability */
-      body { width: 520px; min-width: 520px; height: 640px; min-height: 480px; }
-      #app { height: 100vh; }
+      body { width: 560px; min-width: 560px; height: 680px; min-height: 520px; overflow-y: auto; }
+      #app { min-height: 100%; }
+
+      /* Ultra Retrowave 80s Theme */
+      body.retro {
+        /* Enhanced retro palette */
+        --color-brand: #ff0080;        /* Hot pink */
+        --color-brand-600: #e6006b;    /* Darker hot pink */
+        --color-accent: #00ffff;       /* Cyan */
+        --color-accent-600: #00e6e6;   /* Darker cyan */
+        --color-secondary: #8a2be2;    /* Blue violet */
+        --color-tertiary: #ff6600;     /* Orange */
+        --color-warning: #ffff00;      /* Yellow */
+        
+        /* Intense neon background */
+        background:
+          radial-gradient(circle at 20% 20%, rgba(255, 0, 128, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.25) 0%, transparent 50%),
+          radial-gradient(circle at 40% 60%, rgba(138, 43, 226, 0.2) 0%, transparent 50%),
+          linear-gradient(135deg, #0a0a0a 0%, #1a0033 25%, #330066 50%, #1a0033 75%, #0a0a0a 100%);
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Rajdhani', sans-serif;
+      }
+      
+      body.retro::before {
+        /* Enhanced grid with scan lines */
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 0, 128, 0.03) 2px,
+            rgba(255, 0, 128, 0.03) 4px
+          );
+        background-size: 30px 30px, 30px 30px, 100% 4px;
+        animation: gridPulse 4s ease-in-out infinite alternate;
+      }
+      
+      @keyframes gridPulse {
+        0% { opacity: 0.3; }
+        100% { opacity: 0.8; }
+      }
+      
+      @keyframes neonFlicker {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+      }
+      
+      @keyframes hologramGlitch {
+        0% { transform: translateX(0); }
+        10% { transform: translateX(-2px); }
+        20% { transform: translateX(2px); }
+        30% { transform: translateX(0); }
+        100% { transform: translateX(0); }
+      }
     </style>
   </head>
-  <body>
+  <body class="retro">
     <div id="app"></div>
     <script type="module" src="./main.ts"></script>
   </body>

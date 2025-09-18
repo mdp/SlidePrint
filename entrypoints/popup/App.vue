@@ -4,6 +4,7 @@ import { capturePageMessage, outputReady, openOutput, removeSlide, moveSlide, au
 import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
 import { useT, initI18n, setLocaleOverride } from '../../utils/i18n'
+import packageJson from '../../package.json'
 
 const selection = ref<DOMRect | null>(null)
 const slides = ref<Slide[]>([])
@@ -29,10 +30,18 @@ async function cropImage(imgUri: string, dimensions?: DOMRect): Promise<string> 
   return await new Promise((resolve) => {
     img.onload = () => {
       try {
+        // Apply device pixel ratio scaling for HiDPI displays
+        // The screenshot is captured at device resolution, but selection coords are in CSS pixels
+        const devicePixelRatio = window.devicePixelRatio || 1
+        const scaledX = dimensions.x * devicePixelRatio
+        const scaledY = dimensions.y * devicePixelRatio
+        const scaledWidth = dimensions.width * devicePixelRatio
+        const scaledHeight = dimensions.height * devicePixelRatio
+        
         canvas.width = dimensions.width
         canvas.height = dimensions.height
         const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, dimensions.x, dimensions.y, dimensions.width, dimensions.height, 0, 0, dimensions.width, dimensions.height)
+        ctx?.drawImage(img, scaledX, scaledY, scaledWidth, scaledHeight, 0, 0, dimensions.width, dimensions.height)
         resolve(canvas.toDataURL('image/jpeg'))
       } catch {
         resolve(imgUri)
@@ -229,103 +238,834 @@ async function requestSitePermission() {
 </script>
 
 <template>
-  <section class="p-3 text-sm text-slate-800">
-    <header class="mb-3 sticky top-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b z-10 relative">
-      <div class="py-2">
-        <h1 class="font-semibold text-slate-900">SlidePrint</h1>
-        <div class="absolute right-3 top-2 text-xs text-slate-600 select-none">
-          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'en' }" title="English" @click="setLang('en')">en</button>
-          <span class="px-0.5">|</span>
-          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'de' }" :title="t('lang_de')" @click="setLang('de')">de</button>
-          <span class="px-0.5">|</span>
-          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_CN' }" :title="t('lang_zh_CN')" @click="setLang('zh_CN')">中</button>
+  <section class="retro-container">
+    <!-- Holographic Header -->
+    <header class="retro-header">
+      <div class="header-content">
+        <!-- Main Title with Glitch Effect -->
+        <div class="title-container">
+          <h1 class="retro-title">
+            <span class="title-main">SLIDE</span>
+            <span class="title-accent">PRINT</span>
+            <span class="title-version">v{{ packageJson.version }}</span>
+          </h1>
+          <div class="title-underline"></div>
         </div>
-        <div class="mt-1 grid grid-cols-1 md:grid-cols-[1fr_auto] md:items-start gap-2">
-          <ol v-if="isAutoSupported" class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
-            <li v-html="t('instr_auto_step1')"></li>
-            <li v-html="t('instr_auto_stepManual1')"></li>
-            <li v-html="t('instr_auto_stepManual2')"></li>
-            <li v-html="t('instr_auto_step4')"></li>
-          </ol>
-          <ol v-else class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
-            <li v-html="t('instr_manual_step1')"></li>
-            <li v-html="t('instr_manual_step2')"></li>
-            <li v-html="t('instr_manual_step3')"></li>
-          </ol>
-          <div class="flex gap-2 md:justify-end">
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-brand)] text-white shadow-sm hover:bg-[var(--color-brand-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doSelect">{{ t('button_selectArea') }}</button>
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doCapture" :title="t('tooltip_shiftK')">
-              <svg v-if="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
-              <span>{{ t('button_capture') }} (Shift+K)</span>
-            </button>
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doClear">{{ t('button_clear') }}</button>
-            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !slides.length" @click="doFinish">{{ t('button_printSave') }}</button>
-          </div>
-        </div>
-
-        <div v-if="needsPermission" class="mt-2 mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 flex items-center justify-between">
-          <span>Enable on this site to capture.</span>
-          <button class="px-2 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-500" @click="requestSitePermission">Enable</button>
-        </div>
-
-        <div v-if="isAutoSupported" class="mt-2 pb-2">
-          <button class="w-full px-3 py-2 rounded-lg bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-600)] shadow-sm flex items-center justify-center gap-2 disabled:opacity-50" :disabled="autoBusy" @click="doAutoCapture" :title="t('button_autoCapture')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-white"><path d="M12 5v14m-7-7h14"/></svg>
-            <span>{{ t('button_autoCapture') }}</span>
+        
+        <!-- Language Selector -->
+        <div class="lang-selector">
+          <button 
+            v-for="lang in [{ code: 'en', label: 'EN' }, { code: 'de', label: 'DE' }, { code: 'zh_CN', label: '中' }]"
+            :key="lang.code"
+            class="lang-btn"
+            :class="{ active: selectedLang === lang.code }"
+            @click="setLang(lang.code as 'en' | 'zh_CN' | 'de')"
+          >
+            {{ lang.label }}
           </button>
-          <div v-if="autoBusy || autoStatus" class="mt-2 text-xs text-slate-600 flex items-center gap-2">
-            <svg v-if="autoBusy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
-            <span>{{ autoStatus }}</span>
-          </div>
         </div>
+      </div>
+      
+      <!-- Holographic Instructions Panel -->
+      <div class="instructions-panel">
+        <div class="panel-header">
+          <span class="panel-title">{{ isAutoSupported ? 'AUTO MODE' : 'MANUAL MODE' }}</span>
+          <div class="status-indicator" :class="{ active: isAutoSupported }"></div>
+        </div>
+        
+        <ol class="instruction-list">
+          <li v-if="isAutoSupported" v-html="t('instr_auto_step1')" class="instruction-item"></li>
+          <li v-if="isAutoSupported" v-html="t('instr_auto_stepManual1')" class="instruction-item"></li>
+          <li v-if="isAutoSupported" v-html="t('instr_auto_stepManual2')" class="instruction-item"></li>
+          <li v-if="isAutoSupported" v-html="t('instr_auto_step4')" class="instruction-item"></li>
+          
+          <li v-if="!isAutoSupported" v-html="t('instr_manual_step1')" class="instruction-item"></li>
+          <li v-if="!isAutoSupported" v-html="t('instr_manual_step2')" class="instruction-item"></li>
+          <li v-if="!isAutoSupported" v-html="t('instr_manual_step3')" class="instruction-item"></li>
+        </ol>
       </div>
     </header>
 
-    <div class="mb-2 text-xs text-slate-600" v-if="selection">
-      <div class="inline-flex items-center gap-2 rounded-md border px-2 py-1 bg-white shadow-sm">
-        <span class="text-slate-500">Selected</span>
-        <code class="text-slate-700">{{ Math.round(selection.x) }},{{ Math.round(selection.y) }}</code>
-        <span class="text-slate-400">→</span>
-        <code class="text-slate-700">{{ Math.round(selection.width) }}×{{ Math.round(selection.height) }}</code>
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <!-- Permission Alert -->
+      <div v-if="needsPermission" class="permission-alert">
+        <div class="alert-content">
+          <div class="alert-icon">⚡</div>
+          <span>ENABLE SITE ACCESS TO CAPTURE</span>
+          <button class="enable-btn" @click="requestSitePermission">ENABLE</button>
+        </div>
+      </div>
+
+      <!-- Primary Controls -->
+      <div class="primary-controls">
+        <button class="retro-btn primary" :disabled="busy" @click="doSelect">
+          <span class="btn-icon">🎯</span>
+          <span class="btn-text">{{ t('button_selectArea') }}</span>
+          <div class="btn-glow"></div>
+        </button>
+        
+        <button class="retro-btn secondary" :disabled="busy" @click="doCapture">
+          <span class="btn-icon">📸</span>
+          <span class="btn-text">{{ t('button_capture') }}</span>
+          <span class="btn-shortcut">SHIFT+K</span>
+          <div class="btn-glow"></div>
+          <svg v-if="busy" class="loading-spinner" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+            <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Secondary Controls -->
+      <div class="secondary-controls">
+        <button class="retro-btn tertiary" :disabled="busy" @click="doClear">
+          <span class="btn-text">{{ t('button_clear') }}</span>
+        </button>
+        
+        <button class="retro-btn success" :disabled="busy || !slides.length" @click="doFinish">
+          <span class="btn-icon">💾</span>
+          <span class="btn-text">{{ t('button_printSave') }}</span>
+          <div class="btn-glow"></div>
+        </button>
+      </div>
+
+      <!-- Auto Capture -->
+      <div v-if="isAutoSupported" class="auto-capture-section">
+        <button class="retro-btn auto-capture" :disabled="autoBusy" @click="doAutoCapture">
+          <span class="btn-icon">🤖</span>
+          <span class="btn-text">{{ t('button_autoCapture') }}</span>
+          <div class="btn-glow"></div>
+        </button>
+        
+        <div v-if="autoBusy || autoStatus" class="auto-status">
+          <div class="status-spinner" v-if="autoBusy"></div>
+          <span class="status-text">{{ autoStatus }}</span>
+        </div>
       </div>
     </div>
 
-    <div v-if="slides.length" class="grid grid-cols-2 gap-3 pr-2">
+    <!-- Selection Display -->
+    <div v-if="selection" class="selection-display">
+      <div class="selection-info">
+        <span class="info-label">SELECTED AREA</span>
+        <div class="coordinates">
+          <code class="coord-value">{{ Math.round(selection.x) }},{{ Math.round(selection.y) }}</code>
+          <span class="coord-separator">→</span>
+          <code class="coord-value">{{ Math.round(selection.width) }}×{{ Math.round(selection.height) }}</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slides Grid -->
+    <div v-if="slides.length" class="slides-grid">
       <div
         v-for="(s, i) in slides"
         :key="i"
-        class="border rounded-lg bg-white overflow-hidden shadow-sm"
+        class="slide-card"
         @dragover="onDragOver(i, $event)"
         @drop="onDrop(i, $event)"
         @dragend="onDragEnd"
-        :class="{ 'ring-2 ring-[var(--color-brand)]': overIndex === i }"
+        :class="{ 'drag-over': overIndex === i }"
       >
-        <img :src="thumbs[i] || s.img" class="w-full block" />
-        <div class="flex items-center justify-between px-2 py-1 border-t bg-slate-50">
-          <div class="flex items-center gap-2">
-            <button class="p-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing rounded" title="Drag to reorder" aria-label="Drag to reorder" draggable="true" @dragstart="onDragStart(i, $event)">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
-                <path d="M7 4a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 10a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 16a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
-              </svg>
-            </button>
-            <span class="text-[10px] text-slate-500">#{{ i + 1 }}</span>
+        <div class="slide-preview">
+          <img :src="thumbs[i] || s.img" class="slide-image" />
+          <div class="slide-overlay">
+            <span class="slide-number">#{{ String(i + 1).padStart(2, '0') }}</span>
           </div>
-          <div class="flex gap-1">
-            <button class="px-1.5 py-0.5 text-xs rounded bg-slate-200 hover:bg-slate-300" :disabled="i===0" @click="onMove(i,'up')">↑</button>
-            <button class="px-1.5 py-0.5 text-xs rounded bg-slate-200 hover:bg-slate-300" :disabled="i===slides.length-1" @click="onMove(i,'down')">↓</button>
-            <button class="px-1.5 py-0.5 text-xs rounded bg-red-600 text-white hover:bg-red-500" @click="onDelete(i)">Delete</button>
+        </div>
+        
+        <div class="slide-controls">
+          <button 
+            class="drag-handle" 
+            draggable="true" 
+            @dragstart="onDragStart(i, $event)"
+            title="Drag to reorder"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7 4a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 10a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 16a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
+            </svg>
+          </button>
+          
+          <div class="control-buttons">
+            <button class="control-btn up" :disabled="i===0" @click="onMove(i,'up')">↑</button>
+            <button class="control-btn down" :disabled="i===slides.length-1" @click="onMove(i,'down')">↓</button>
+            <button class="control-btn delete" @click="onDelete(i)">×</button>
           </div>
         </div>
       </div>
     </div>
-    <div v-else class="text-slate-500 text-xs">
-      <div class="mt-4 border-2 border-dashed rounded-lg p-4 text-center">
-        <p class="mb-1">{{ t('empty_noSlides') }}</p>
-        <p>{{ t('empty_howTo') }}</p>
+    
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <div class="empty-content">
+        <h3 class="empty-title">{{ t('empty_noSlides') }}</h3>
+        <p class="empty-subtitle">{{ t('empty_howTo') }}</p>
+        <div class="empty-animation"></div>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+/* Ultra Retrowave 80s Styling */
+.retro-container {
+  padding: 20px;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header Styling */
+.retro-header {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.title-container {
+  position: relative;
+}
+
+.retro-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px;
+  font-weight: 900;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  animation: hologramGlitch 8s infinite;
+}
+
+.title-main {
+  background: linear-gradient(45deg, var(--color-brand), #ff6600);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 128, 0.8),
+    0 0 20px rgba(255, 0, 128, 0.6),
+    0 0 30px rgba(255, 0, 128, 0.4);
+  filter: drop-shadow(0 0 8px rgba(255, 0, 128, 0.5));
+}
+
+.title-accent {
+  background: linear-gradient(45deg, var(--color-accent), #8a2be2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.8),
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 30px rgba(0, 255, 255, 0.4);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.5));
+}
+
+.title-version {
+  font-size: 12px;
+  color: var(--color-warning);
+  text-shadow: 0 0 8px rgba(255, 255, 0, 0.8);
+  font-weight: 400;
+}
+
+.title-underline {
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-brand), var(--color-accent), var(--color-brand));
+  margin-top: 4px;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255, 0, 128, 0.6);
+  animation: neonFlicker 3s infinite alternate;
+}
+
+/* Language Selector */
+.lang-selector {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.lang-btn {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.lang-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.lang-btn.active {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+}
+
+/* Instructions Panel */
+.instructions-panel {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.status-indicator.active {
+  background: var(--color-accent);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
+  animation: neonFlicker 2s infinite alternate;
+}
+
+.instruction-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step-counter;
+}
+
+.instruction-item {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 32px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.instruction-item::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(45deg, var(--color-brand), var(--color-accent));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 0, 128, 0.6);
+}
+
+/* Control Panel */
+.control-panel {
+  margin-bottom: 20px;
+}
+
+/* Permission Alert */
+.permission-alert {
+  margin-bottom: 16px;
+  background: linear-gradient(45deg, rgba(255, 255, 0, 0.1), rgba(255, 102, 0, 0.1));
+  border: 1px solid var(--color-warning);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 0 16px rgba(255, 255, 0, 0.3);
+  animation: neonFlicker 2s infinite alternate;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alert-icon {
+  font-size: 16px;
+  animation: neonFlicker 1s infinite alternate;
+}
+
+.enable-btn {
+  padding: 6px 12px;
+  background: var(--color-warning);
+  color: black;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(255, 255, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.enable-btn:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+  transform: translateY(-1px);
+}
+
+/* Button Styling */
+.retro-btn {
+  position: relative;
+  padding: 12px 20px;
+  border: 2px solid;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.retro-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retro-btn .btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.retro-btn:hover .btn-glow {
+  transform: translateX(100%);
+}
+
+.retro-btn.primary {
+  border-color: var(--color-brand);
+  box-shadow: 
+    0 0 20px rgba(255, 0, 128, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.retro-btn.primary:hover {
+  box-shadow: 
+    0 0 30px rgba(255, 0, 128, 0.6),
+    0 0 60px rgba(255, 0, 128, 0.3);
+  transform: translateY(-2px);
+}
+
+.retro-btn.secondary {
+  border-color: var(--color-accent);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.retro-btn.secondary:hover {
+  box-shadow: 
+    0 0 30px rgba(0, 255, 255, 0.6),
+    0 0 60px rgba(0, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.retro-btn.tertiary {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.retro-btn.tertiary:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.retro-btn.success {
+  border-color: var(--color-secondary);
+  box-shadow: 
+    0 0 20px rgba(138, 43, 226, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.retro-btn.success:hover {
+  box-shadow: 
+    0 0 30px rgba(138, 43, 226, 0.6),
+    0 0 60px rgba(138, 43, 226, 0.3);
+  transform: translateY(-2px);
+}
+
+.retro-btn.auto-capture {
+  border-color: var(--color-tertiary);
+  box-shadow: 
+    0 0 20px rgba(255, 102, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.retro-btn.auto-capture:hover {
+  box-shadow: 
+    0 0 30px rgba(255, 102, 0, 0.6),
+    0 0 60px rgba(255, 102, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-shortcut {
+  font-size: 10px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+/* Control Layout */
+.primary-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.secondary-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.auto-capture-section {
+  margin-bottom: 16px;
+}
+
+.auto-capture-section .retro-btn {
+  width: 100%;
+}
+
+.auto-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.status-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Selection Display */
+.selection-display {
+  margin-bottom: 20px;
+}
+
+.selection-info {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.info-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.coordinates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', monospace;
+}
+
+.coord-value {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-accent);
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.4);
+}
+
+.coord-separator {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* Slides Grid */
+.slides-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.slide-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 0, 128, 0.2);
+  transition: all 0.3s ease;
+}
+
+.slide-card:hover {
+  border-color: var(--color-brand);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(255, 0, 128, 0.4);
+  transform: translateY(-4px);
+}
+
+.slide-card.drag-over {
+  border-color: var(--color-accent);
+  box-shadow: 
+    0 0 40px rgba(0, 255, 255, 0.6);
+}
+
+.slide-preview {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.slide-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9) contrast(1.1);
+}
+
+.slide-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  padding: 4px 8px;
+  backdrop-filter: blur(10px);
+}
+
+.slide-number {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
+}
+
+.slide-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.drag-handle {
+  padding: 4px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.drag-handle svg {
+  width: 12px;
+  height: 12px;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.control-btn {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-btn.up:hover,
+.control-btn.down:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.control-btn.delete {
+  border-color: rgba(255, 0, 0, 0.3);
+  color: rgba(255, 0, 0, 0.8);
+}
+
+.control-btn.delete:hover {
+  border-color: #ff0000;
+  color: #ff0000;
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  margin-top: 40px;
+}
+
+.empty-content {
+  text-align: center;
+  position: relative;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+  animation: neonFlicker 4s infinite alternate;
+}
+
+.empty-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  margin: 0 0 8px 0;
+}
+
+.empty-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.empty-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border: 2px solid rgba(0, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.empty-animation::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(255, 0, 128, 0.1);
+  border-radius: 50%;
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes neonFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes hologramGlitch {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(-1px); }
+  20% { transform: translateX(1px); }
+  30% { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
 </style>
