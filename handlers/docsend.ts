@@ -1,17 +1,12 @@
 import { HandlerFinderFn, HandlerFn } from "."
-import { capturePageMessage } from "../utils/messageHandling"
 import { fixHiDPI } from "../utils/hidpi"
 import { sendRightArrow } from "../utils/sendKeyEvent"
-import { sleep } from "../utils/sleep"
+import { runAutoCapture, parseCounter, AutoCaptureAdapter } from "../utils/autoCapture"
 
-const getSlideCount = () => {
-  const [countEl] = document.querySelectorAll(".toolbar-page-indicator")
-  if (countEl) {
-    const countStr = countEl.textContent?.split('/')[1].trim()
-    if (countStr) return parseInt(countStr, 10)
-  }
-  return 0
-}
+const counterEl = () => document.querySelector(".toolbar-page-indicator")
+const readCounts = () => parseCounter(counterEl()?.textContent)
+const getSlideCount = () => readCounts()?.total || 0
+const getCurrent = () => readCounts()?.current || 0
 
 const getDimensions = () => {
   const imageElement = document.querySelectorAll(".item.active .viewer_content-container")[0]
@@ -27,11 +22,21 @@ export const getHandlerFor: HandlerFinderFn = (url: string) => {
 }
 
 export const handler: HandlerFn = async () => {
-    const slideCount = getSlideCount()
-    for(let slide=1; slide <= slideCount; slide++) {
-        const dimensions = getDimensions() || undefined
-        await capturePageMessage(slide === slideCount, dimensions)
-        sendRightArrow()
-        await sleep(600)
+    const adapter: AutoCaptureAdapter = {
+      ready: async () => {
+        const start = Date.now();
+        while (Date.now() - start < 3000) {
+          if (counterEl()) return;
+          await new Promise(r => setTimeout(r, 100));
+        }
+      },
+      getTotal: getSlideCount,
+      getCurrent: getCurrent,
+      getDimensions: () => getDimensions(),
+      next: () => sendRightArrow(),
+      debounceAfterNextMs: 600,
     }
+    await runAutoCapture(adapter)
 }
+
+export const getCounts = () => readCounts()

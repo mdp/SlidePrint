@@ -2,8 +2,8 @@ import { Slide } from "../types/Slide"
 
 type ValidEvents = 'content:ready' |
     'popup:can-print' | 'popup:opened' | 'popup:print' | 'output:ready' | 'content:can-print' | 'content:start-capture' | 'content:capture-page' |
-    'content:capture-snapshot' | 'content:select-area' |
-    'open:output' | 'output:opened' | 'reset' | 'slides:remove' | 'slides:move' | 'auto:capture'
+    'content:capture-snapshot' | 'content:select-area' | 'content:get-counts' |
+    'open:output' | 'output:opened' | 'reset' | 'slides:remove' | 'slides:move' | 'slides:updated' | 'auto:capture' | 'auto:progress'
 
 interface MessageRequest<T> {
   event: ValidEvents
@@ -93,4 +93,8 @@ export async function moveSlide(from: number, to: number) {
 
 export async function autoCapture() {
     return await asyncRuntimeMessage<void, void>({ event: 'auto:capture' })
+}
+
+export async function getCounts(tabId: number): Promise<{ current: number, total: number } | null> {
+    return await asyncTabMessage<void, { current: number, total: number } | null>(tabId, { event: 'content:get-counts' })
 }

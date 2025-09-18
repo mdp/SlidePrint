@@ -1,5 +1,6 @@
-import { findHandlerFor } from '../handlers';
+import { findHandlerFor, findCountsFor } from '../handlers';
 import { asyncMessageHandler } from '../utils/messageHandling';
+import { capturePageMessage } from '../utils/messageHandling';
 import { fixHiDPI } from '../utils/hidpi';
 
 export default defineUnlistedScript({
@@ -28,8 +29,33 @@ export default defineUnlistedScript({
         return true
       }
 
+      if (request.event === 'content:get-counts') {
+        const countsFn = findCountsFor(window.location.href)
+        if (!countsFn) return null
+        return countsFn()
+      }
+
       return false
     }))
+
+    // Page-level quick capture: Shift+K captures using saved selection for this origin
+    window.addEventListener('keydown', async (e: KeyboardEvent) => {
+      if (!e.shiftKey) return
+      const key = e.key
+      if (key !== 'K' && key !== 'k') return
+      try {
+        const origin = window.location.origin
+        const selKey = `selection:${origin}`
+        // @ts-ignore browser.storage is available in content script
+        const saved = await browser.storage.local.get(selKey)
+        const rect = saved?.[selKey]
+        if (rect) {
+          await capturePageMessage(false, rect as any)
+        }
+      } catch (err) {
+        console.log('Shift+K capture failed', err)
+      }
+    }, { capture: true })
   }
 });
 

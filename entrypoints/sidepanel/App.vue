@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture } from '../../utils/messageHandling'
+import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture, getCounts } from '../../utils/messageHandling'
 import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
 
@@ -11,6 +11,7 @@ const thumbs = ref<string[]>([])
 const isAutoSupported = ref(false)
 const autoBusy = ref(false)
 const autoStatus = ref('')
+const autoTotal = ref<number | null>(null)
 let autoInterval: number | null = null
 const dragIndex = ref<number | null>(null)
 const overIndex = ref<number | null>(null)
@@ -107,6 +108,16 @@ async function doFinish() {
 async function doClear() {
   await browser.runtime.sendMessage({ event: 'reset' })
   slides.value = []
+  // Clear saved selection for this origin and reset local state
+  try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url) {
+      const origin = new URL(tab.url).origin
+      const key = `selection:${origin}`
+      await browser.storage.local.remove(key)
+    }
+  } catch {}
+  selection.value = null
 }
 
 onMounted(async () => {
@@ -156,9 +167,18 @@ onMounted(async () => {
   try { browser.tabs.onActivated.addListener(handleActivated) } catch {}
   try { browser.tabs.onUpdated.addListener(handleUpdated) } catch {}
 
+  // Refresh thumbnails when background captures a new slide (e.g., via shortcut)
+  const onSlidesUpdated = async (msg: any) => {
+    if (msg?.event === 'slides:updated') {
+      await refreshSlides()
+    }
+  }
+  try { browser.runtime.onMessage.addListener(onSlidesUpdated) } catch {}
+
   onUnmounted(() => {
     try { browser.tabs.onActivated.removeListener(handleActivated) } catch {}
     try { browser.tabs.onUpdated.removeListener(handleUpdated) } catch {}
+    try { browser.runtime.onMessage.removeListener(onSlidesUpdated) } catch {}
   })
 })
 
@@ -207,7 +227,7 @@ async function doAutoCapture() {
   try {
     autoBusy.value = true
     autoStatus.value = 'Auto capturing…'
-    const onOutputOpened = async (msg: any) => {
+  const onOutputOpened = async (msg: any) => {
       if (msg?.event === 'output:opened') {
         if (autoInterval) clearInterval(autoInterval)
         autoInterval = null
@@ -217,7 +237,19 @@ async function doAutoCapture() {
         try { browser.runtime.onMessage.removeListener(onOutputOpened) } catch {}
       }
     }
-    try { browser.runtime.onMessage.addListener(onOutputOpened) } catch {}
+    const onAutoProgress = (msg: any) => {
+      if (msg?.event === 'auto:progress' && msg?.data) {
+        const { current, total } = msg.data
+        if (typeof total === 'number') autoTotal.value = total
+        if (typeof current === 'number' && typeof total === 'number') {
+          autoStatus.value = `Auto capturing… ${current}/${total}`
+        }
+      }
+    }
+    try {
+      browser.runtime.onMessage.addListener(onOutputOpened)
+      browser.runtime.onMessage.addListener(onAutoProgress)
+    } catch {}
     await autoCapture()
   } finally {
     if (autoInterval) clearInterval(autoInterval)
@@ -239,14 +271,17 @@ async function doAutoCapture() {
             <li>Navigate and click <b>Capture</b> for each slide.</li>
             <li>Reorder or delete below, then <b>Print / Save</b> to print or save as PDF.</li>
           </ol>
-          <span class="hidden md:inline-flex items-center justify-center h-6 px-2 text-[11px] rounded bg-slate-100 text-slate-600 border">Alt+Shift+S</span>
+          <div class="hidden md:flex items-center gap-2">
+            <span class="inline-flex items-center justify-center h-6 px-2 text-[11px] rounded bg-slate-100 text-slate-600 border" title="Open panel + select area">Alt+Shift+S</span>
+            <span class="inline-flex items-center justify-center h-6 px-2 text-[11px] rounded bg-slate-100 text-slate-600 border" title="On page: press Shift+K to capture">Shift+K</span>
+          </div>
         </div>
       </div>
       <div class="pb-2 grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
         <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-brand)] text-white shadow-sm hover:bg-[var(--color-brand-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doSelect">Select Area</button>
-        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !selection" @click="doCapture">
+        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !selection" @click="doCapture" title="On page shortcut: Shift+K">
           <svg v-if="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
-          <span>Capture</span>
+          <span>Capture (Shift+K)</span>
         </button>
         <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doClear">Clear</button>
         <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doFinish">Print/Save</button>

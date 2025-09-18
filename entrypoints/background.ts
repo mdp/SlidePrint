@@ -76,6 +76,7 @@ export default defineBackground(() => {
       console.log("capture page", request)
       const image = await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 })
       currentSlides.push({ img: image, dimensions: request.data?.dimensions || null })
+      try { await browser.runtime.sendMessage({ event: 'slides:updated' }) } catch {}
       if (request.data?.done) {
         await browser.tabs.create({ url: browser.runtime.getURL('/output.html') })
         try { await browser.runtime.sendMessage({ event: 'output:opened' }) } catch {}
@@ -85,6 +86,9 @@ export default defineBackground(() => {
       return currentSlides
     } else if (request && request.event === 'open:output') {
       await browser.tabs.create({ url: browser.runtime.getURL('/output.html') })
+      return true
+    } else if (request && request.event === 'auto:progress') {
+      try { await browser.runtime.sendMessage({ event: 'auto:progress', data: request.data }) } catch {}
       return true
     } else if (request && request.event === 'slides:remove' && typeof request.data?.index === 'number') {
       const idx = request.data.index
@@ -115,30 +119,32 @@ export default defineBackground(() => {
     if (typeof chrome !== 'undefined' && chrome.commands) {
       // @ts-ignore
       chrome.commands.onCommand.addListener(async (command: string) => {
-        if (command !== 'toggle-sidepanel-select') return
         const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-        if (!tab?.id || !tab.url) return
-        try {
-          await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] })
-        } catch {}
-        try {
-          // Open side panel for current window
-          // @ts-ignore
-          if (chrome.sidePanel) {
+        if (!tab?.id) return
+        if (command === 'toggle-sidepanel-select') {
+          if (!tab.url) return
+          try {
+            await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] })
+          } catch {}
+          try {
+            // Open side panel for current window
             // @ts-ignore
-            await chrome.sidePanel.setOptions({ enabled: true, path: '/sidepanel.html', tabId: tab.id })
-            // @ts-ignore
-            await chrome.sidePanel.open({ windowId: tab.windowId })
-          }
-        } catch {}
+            if (chrome.sidePanel) {
+              // @ts-ignore
+              await chrome.sidePanel.setOptions({ enabled: true, path: '/sidepanel.html', tabId: tab.id })
+              // @ts-ignore
+              await chrome.sidePanel.open({ windowId: tab.windowId })
+            }
+          } catch {}
 
-        // Ask the page to select area and persist it per-origin
-        try {
-          const rect = await browser.tabs.sendMessage(tab.id, { event: 'content:select-area' })
-          const origin = new URL(tab.url).origin
-          const key = `selection:${origin}`
-          await browser.storage.local.set({ [key]: rect?.result || rect })
-        } catch {}
+          // Ask the page to select area and persist it per-origin
+          try {
+            const rect = await browser.tabs.sendMessage(tab.id, { event: 'content:select-area' })
+            const origin = new URL(tab.url).origin
+            const key = `selection:${origin}`
+            await browser.storage.local.set({ [key]: rect?.result || rect })
+          } catch {}
+        }
       })
     }
   } catch {}

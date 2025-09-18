@@ -36,7 +36,9 @@
 - Navigate your slides/pages and click "Capture" for each.
 - Click "Open Output" to review and print or save as PDF.
 
-Keyboard shortcut: Press Alt+Shift+S to open the side panel and start selection (configurable in chrome://extensions/shortcuts).
+Shortcuts
+- Alt+Shift+S: Open the side panel and start selection
+- Shift+K (on the page): Capture the current page using your saved selection
 
 Notes
 - The extension cannot inject on Chrome internal pages (chrome://) or the Chrome Web Store.
