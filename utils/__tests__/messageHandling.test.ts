@@ -2,14 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as MH from '../messageHandling'
 
 // Minimal browser polyfill for tests
-declare global {
-  // eslint-disable-next-line no-var
-  var browser: any
-}
 
 describe('messageHandling helpers', () => {
   beforeEach(() => {
-    globalThis.browser = {
+    ;(globalThis as any).browser = {
       runtime: {
         sendMessage: vi.fn(),
       },
@@ -28,6 +24,7 @@ describe('messageHandling helpers', () => {
   })
 
   it('sendToBg unwraps envelope responses', async () => {
+    const browser = (globalThis as any).browser
     browser.runtime.sendMessage.mockResolvedValue({ result: true, error: null })
     const res = await MH.sendToBg('open:output')
     expect(res).toBe(true)
@@ -35,6 +32,7 @@ describe('messageHandling helpers', () => {
   })
 
   it('sendToTab unwraps envelope and supports types', async () => {
+    const browser = (globalThis as any).browser
     browser.tabs.sendMessage.mockResolvedValue({ result: true, error: null })
     const res = await MH.sendToTab(1, 'content:ready')
     expect(res).toBe(true)
@@ -42,6 +40,7 @@ describe('messageHandling helpers', () => {
   })
 
   it('sendToBg times out when no response', async () => {
+    const browser = (globalThis as any).browser
     browser.runtime.sendMessage.mockReturnValue(new Promise(() => {}))
     await expect(MH.sendToBg('open:output', undefined, { timeoutMs: 10 })).rejects.toThrow(/timed out/)
   })
@@ -58,6 +57,7 @@ describe('messageHandling helpers', () => {
   })
 
   it('ensureContentReady retries, injects, then succeeds', async () => {
+    const browser = (globalThis as any).browser
     browser.tabs.sendMessage
       .mockRejectedValueOnce(new Error('no listener'))
       .mockResolvedValueOnce(true as any)

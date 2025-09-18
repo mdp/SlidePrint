@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture, getCounts, ensureContentReady } from '../../utils/messageHandling'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { capturePageMessage, outputReady, openOutput, removeSlide, moveSlide, autoCapture, ensureContentReady, sendToBg } from '../../utils/messageHandling'
 import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
 import { useT, initI18n, setLocaleOverride } from '../../utils/i18n'
@@ -44,7 +44,6 @@ async function cropImage(imgUri: string, dimensions?: DOMRect): Promise<string> 
 
 async function refreshSlides() {
   slides.value = await outputReady()
-  // regenerate thumbnails cropped to slide.dimensions
   const results: string[] = []
   for (const s of slides.value) {
     results.push(await cropImage(s.img, s.dimensions || undefined))
@@ -52,35 +51,10 @@ async function refreshSlides() {
   thumbs.value = results
 }
 
-// readiness now provided by utils.ensureContentReady
-
 async function doSelect() {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return
-  if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.includes('chrome.google.com/webstore')) {
-    console.warn(t('warning_cannotSelectOnPage'))
-    return
-  }
-  busy.value = true
-  try {
-    const ready = await ensureContentReady(tab.id)
-    if (!ready) { needsPermission.value = true; pendingAction.value = 'select'; return }
-    let rect: DOMRect
-    try {
-      rect = await selectArea(tab.id)
-    } catch {
-      await new Promise(r => setTimeout(r, 200))
-      rect = await selectArea(tab.id)
-    }
-    selection.value = rect
-    if (tab.url) {
-      const origin = new URL(tab.url).origin
-      const key = `selection:${origin}`
-      await browser.storage.local.set({ [key]: rect })
-    }
-  } finally {
-    busy.value = false
-  }
+  // Fire and close the popup immediately so user can draw
+  try { void sendToBg('select:start') } catch {}
+  try { window.close() } catch {}
 }
 
 async function doCapture() {
@@ -94,14 +68,11 @@ async function doCapture() {
   }
 }
 
-async function doFinish() {
-  await openOutput()
-}
+async function doFinish() { await openOutput() }
 
 async function doClear() {
   await browser.runtime.sendMessage({ event: 'reset' })
   slides.value = []
-  // Clear saved selection for this origin and reset local state
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.url) {
@@ -113,7 +84,7 @@ async function doClear() {
   selection.value = null
 }
 
-// Handlers declared synchronously so lifecycle hooks can register before awaits
+// Handlers
 let storageHandler: ((changes: Record<string, any>, area: any) => void) | null = null
 const handleActivated = async () => {
   try {
@@ -139,13 +110,19 @@ onMounted(async () => {
     const value = stored?.localeOverride as 'en' | 'zh_TW' | undefined
     selectedLang.value = value || ''
   } catch {}
-  await browser.runtime.sendMessage({ event: 'sidepanel:opened' })
+  // Notify background popup opened to prepare offscreen
+  try { await browser.runtime.sendMessage({ event: 'popup:opened' }) } catch {}
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab?.url) {
     try { isAutoSupported.value = !!findHandlerFor(tab.url) } catch { isAutoSupported.value = false }
     selection.value = null
     const origin = new URL(tab.url).origin
     const key = `selection:${origin}`
+    // Load existing selection immediately (popup might open after selection already saved)
+    try {
+      const stored = await browser.storage.local.get(key)
+      if (stored && stored[key]) selection.value = stored[key]
+    } catch {}
     storageHandler = (changes: Record<string, any>, area: any) => {
       if (area !== 'local') return
       if (changes[key]) selection.value = changes[key].newValue
@@ -167,49 +144,16 @@ onUnmounted(() => {
   try { browser.runtime.onMessage.removeListener(onCaptureNeedsPermission) } catch {}
 })
 
-async function onDelete(i: number) {
-  await removeSlide(i)
-  await refreshSlides()
-}
-
-async function onMove(i: number, dir: 'up' | 'down') {
-  const to = dir === 'up' ? i - 1 : i + 1
-  await moveSlide(i, to)
-  await refreshSlides()
-}
-
-function onDragStart(i: number, e: DragEvent) {
-  dragIndex.value = i
-  overIndex.value = null
-  try { e.dataTransfer?.setData('text/plain', String(i)) } catch {}
-  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-}
-
-function onDragOver(i: number, e: DragEvent) {
-  e.preventDefault()
-  overIndex.value = i
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-}
-
-async function onDrop(i: number, e: DragEvent) {
-  e.preventDefault()
-  const from = dragIndex.value
-  dragIndex.value = null
-  overIndex.value = null
-  if (from === null || from === i) return
-  await moveSlide(from, i)
-  await refreshSlides()
-}
-
-function onDragEnd() {
-  dragIndex.value = null
-  overIndex.value = null
-}
+async function onDelete(i: number) { await removeSlide(i); await refreshSlides() }
+async function onMove(i: number, dir: 'up' | 'down') { const to = dir === 'up' ? i - 1 : i + 1; await moveSlide(i, to); await refreshSlides() }
+function onDragStart(i: number, e: DragEvent) { dragIndex.value = i; overIndex.value = null; try { e.dataTransfer?.setData('text/plain', String(i)) } catch {}; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move' }
+function onDragOver(i: number, e: DragEvent) { e.preventDefault(); overIndex.value = i; if (e.dataTransfer) e.dataTransfer.dropEffect = 'move' }
+async function onDrop(i: number, e: DragEvent) { e.preventDefault(); const from = dragIndex.value; dragIndex.value = null; overIndex.value = null; if (from === null || from === i) return; await moveSlide(from, i); await refreshSlides() }
+function onDragEnd() { dragIndex.value = null; overIndex.value = null }
 
 async function doAutoCapture() {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !isAutoSupported.value) return
-  // Ensure permission/readiness before triggering auto-capture
   try {
     const ready = await ensureContentReady(tab.id)
     if (!ready) { needsPermission.value = true; pendingAction.value = 'auto'; return }
@@ -246,24 +190,14 @@ async function doAutoCapture() {
   }
 }
 
-function onLangChange(e: Event) {
-  const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_TW' | ''
-  selectedLang.value = val
-  setLocaleOverride(val || null)
-}
-
-function setLang(val: 'en' | 'zh_TW') {
-  selectedLang.value = val
-  setLocaleOverride(val)
-}
+function setLang(val: 'en' | 'zh_TW') { selectedLang.value = val; setLocaleOverride(val) }
+function onLangChange(e: Event) { const val = (e.target as HTMLSelectElement).value as 'en' | 'zh_TW' | ''; selectedLang.value = val; setLocaleOverride(val || null) }
 
 async function requestSitePermission() {
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const url = tab?.url
     if (!url) return
-    const origin = new URL(url).origin
-    const pattern = origin.endsWith('/') ? `${origin}*` : `${origin}/*`
     let granted = false
     try {
       // @ts-ignore
@@ -280,12 +214,10 @@ async function requestSitePermission() {
     }
     if (granted && tab?.id) {
       needsPermission.value = false
-      // Attempt to ensure readiness immediately after grant
       await ensureContentReady(tab.id)
       const action = pendingAction.value
       pendingAction.value = null
       if (action === 'select') {
-        // Defer to next tick to avoid overlapping with permission UI
         setTimeout(() => { doSelect().catch(() => {}) }, 0)
       } else if (action === 'auto') {
         setTimeout(() => { doAutoCapture().catch(() => {}) }, 0)
@@ -302,21 +234,10 @@ async function requestSitePermission() {
     <header class="mb-3 sticky top-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b z-10 relative">
       <div class="py-2">
         <h1 class="font-semibold text-slate-900">SlidePrint</h1>
-        <!-- Compact language toggle in the top-right corner -->
         <div class="absolute right-3 top-2 text-xs text-slate-600 select-none">
-          <button
-            class="px-1 py-0.5 rounded hover:bg-slate-100"
-            :class="{ 'text-slate-900 font-medium': selectedLang === 'en' }"
-            title="English"
-            @click="setLang('en')"
-          >en</button>
+          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'en' }" title="English" @click="setLang('en')">en</button>
           <span class="px-0.5">|</span>
-          <button
-            class="px-1 py-0.5 rounded hover:bg-slate-100"
-            :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_TW' }"
-            :title="t('lang_zh_TW')"
-            @click="setLang('zh_TW')"
-          >中</button>
+          <button class="px-1 py-0.5 rounded hover:bg-slate-100" :class="{ 'text-slate-900 font-medium': selectedLang === 'zh_TW' }" :title="t('lang_zh_TW')" @click="setLang('zh_TW')">中</button>
         </div>
         <div class="mt-1 grid grid-cols-1 md:grid-cols-[1fr_auto] md:items-start gap-2">
           <ol v-if="isAutoSupported" class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
@@ -330,36 +251,31 @@ async function requestSitePermission() {
             <li v-html="t('instr_manual_step2')"></li>
             <li v-html="t('instr_manual_step3')"></li>
           </ol>
-          <div class="hidden md:flex items-center gap-2">
-            <span class="inline-flex items-center justify-center h-6 px-2 text-[11px] rounded bg-slate-100 text-slate-600 border" :title="t('tooltip_openPanelSelect')">Alt+Shift+S</span>
-            <span class="inline-flex items-center justify-center h-6 px-2 text-[11px] rounded bg-slate-100 text-slate-600 border" :title="t('tooltip_shiftK')">Shift+K</span>
+          <div class="flex gap-2 md:justify-end">
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-brand)] text-white shadow-sm hover:bg-[var(--color-brand-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doSelect">{{ t('button_selectArea') }}</button>
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !selection" @click="doCapture" :title="t('tooltip_shiftK')">
+              <svg v-if="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
+              <span>{{ t('button_capture') }} (Shift+K)</span>
+            </button>
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doClear">{{ t('button_clear') }}</button>
+            <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doFinish">{{ t('button_printSave') }}</button>
           </div>
-          
         </div>
-      </div>
-      <div class="pb-2 grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
-        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-brand)] text-white shadow-sm hover:bg-[var(--color-brand-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doSelect">{{ t('button_selectArea') }}</button>
-        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-600)] disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy || !selection" @click="doCapture" :title="t('tooltip_shiftK')">
-          <svg v-if="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
-          <span>{{ t('button_capture') }} (Shift+K)</span>
-        </button>
-        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doClear">{{ t('button_clear') }}</button>
-        <button class="w-full md:w-auto px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2" :disabled="busy" @click="doFinish">{{ t('button_printSave') }}</button>
-      </div>
 
-      <div v-if="needsPermission" class="mt-2 mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 flex items-center justify-between">
-        <span>Enable on this site to capture.</span>
-        <button class="px-2 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-500" @click="requestSitePermission">Enable</button>
-      </div>
+        <div v-if="needsPermission" class="mt-2 mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 flex items-center justify-between">
+          <span>Enable on this site to capture.</span>
+          <button class="px-2 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-500" @click="requestSitePermission">Enable</button>
+        </div>
 
-      <div v-if="isAutoSupported" class="pb-2">
-        <button class="w-full px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-slate-800 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50" :disabled="autoBusy" @click="doAutoCapture" :title="t('button_autoCapture')">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-[var(--color-brand)]"><path d="M12 5v14m-7-7h14"/></svg>
-          <span>{{ t('button_autoCapture') }}</span>
-        </button>
-        <div v-if="autoBusy || autoStatus" class="mt-2 text-xs text-slate-600 flex items-center gap-2">
-          <svg v-if="autoBusy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
-          <span>{{ autoStatus }}</span>
+        <div v-if="isAutoSupported" class="mt-2 pb-2">
+          <button class="w-full px-3 py-2 rounded-lg bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-600)] shadow-sm flex items-center justify-center gap-2 disabled:opacity-50" :disabled="autoBusy" @click="doAutoCapture" :title="t('button_autoCapture')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4 text-white"><path d="M12 5v14m-7-7h14"/></svg>
+            <span>{{ t('button_autoCapture') }}</span>
+          </button>
+          <div v-if="autoBusy || autoStatus" class="mt-2 text-xs text-slate-600 flex items-center gap-2">
+            <svg v-if="autoBusy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 008 12H4z"/></svg>
+            <span>{{ autoStatus }}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -373,7 +289,7 @@ async function requestSitePermission() {
       </div>
     </div>
 
-    <div v-if="slides.length" class="grid grid-cols-1 gap-3 pr-2 overflow-auto" style="max-height: calc(100vh - 160px);">
+    <div v-if="slides.length" class="grid grid-cols-2 gap-3 pr-2">
       <div
         v-for="(s, i) in slides"
         :key="i"
@@ -386,13 +302,7 @@ async function requestSitePermission() {
         <img :src="thumbs[i] || s.img" class="w-full block" />
         <div class="flex items-center justify-between px-2 py-1 border-t bg-slate-50">
           <div class="flex items-center gap-2">
-            <button
-              class="p-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing rounded"
-              title="Drag to reorder"
-              aria-label="Drag to reorder"
-              draggable="true"
-              @dragstart="onDragStart(i, $event)"
-            >
+            <button class="p-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing rounded" title="Drag to reorder" aria-label="Drag to reorder" draggable="true" @dragstart="onDragStart(i, $event)">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
                 <path d="M7 4a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 10a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0zM7 16a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
               </svg>

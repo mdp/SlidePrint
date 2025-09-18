@@ -2,6 +2,7 @@ import { findHandlerFor, findCountsFor } from '../handlers';
 import { onMessage } from '../utils/messageHandling';
 import { capturePageMessage } from '../utils/messageHandling';
 import { fixHiDPI } from '../utils/hidpi';
+import { t } from '../utils/i18n';
 
 export default defineUnlistedScript({
   main() {
@@ -62,7 +63,7 @@ function createSelectionOverlay(): Promise<DOMRect> {
 
     // Instruction banner
     const hint = document.createElement('div')
-    hint.textContent = 'Drag to select an area. Press Esc to cancel.'
+    hint.textContent = t('overlay_hint')
     Object.assign(hint.style, {
       position: 'fixed',
       top: '12px',
@@ -125,7 +126,10 @@ function createSelectionOverlay(): Promise<DOMRect> {
       overlay.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('keydown', onKeyDown)
       overlay.remove()
-      if (rect) resolve(rect)
+      if (rect) {
+        try { browser.runtime.sendMessage({ event: 'select:done', data: rect }) } catch {}
+        resolve(rect)
+      }
     }
 
     function onMouseUp() {

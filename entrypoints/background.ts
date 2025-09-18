@@ -6,63 +6,156 @@ export default defineBackground(() => {
 
 
   let currentSlides: Slide[] = []
+  let offscreenPort: chrome.runtime.Port | null = null
 
-  // Ask Chrome to open the side panel when the action icon is clicked
-  try {
-    // @ts-ignore
-    if (typeof chrome !== 'undefined' && chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  function updateBadge(count?: number, tabId?: number) {
+    const val = typeof count === 'number' ? count : currentSlides.length
+    const text = val > 0 ? String(val) : ''
+    try {
       // @ts-ignore
-      chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
-    }
-  } catch {}
-
-  // Open side panel when the extension icon is clicked (Chrome only)
-  try {
-    // Prefer Chrome API when available
-    // @ts-ignore
-    if (typeof chrome !== 'undefined' && chrome.action) {
-      // @ts-ignore
-      chrome.action.onClicked.addListener(async (tab) => {
-        try {
+      if (chrome?.action?.setBadgeText) {
+        // @ts-ignore
+        chrome.action.setBadgeText(tabId ? { text, tabId } : { text })
+        try { // optional; ignore if not supported
           // @ts-ignore
-          if (chrome.sidePanel) {
-            // @ts-ignore
-            await chrome.sidePanel.setOptions({ enabled: true, path: '/sidepanel.html', tabId: tab?.id })
-            // @ts-ignore
-            await chrome.sidePanel.open({ tabId: tab?.id })
-            return
-          }
-        } catch (e) {
-          console.log('Could not open side panel', e)
-        }
-        // Fallback: open the side panel UI as a normal tab
-        await browser.tabs.create({ url: browser.runtime.getURL('/sidepanel.html') })
-      })
-    } else if (browser.action) {
-      browser.action.onClicked.addListener(async (_tab) => {
-        await browser.tabs.create({ url: browser.runtime.getURL('/sidepanel.html') })
-      })
-    }
+          chrome.action.setBadgeBackgroundColor?.({ color: '#4f46e5' })
+        } catch {}
+      } else if (browser?.action?.setBadgeText) {
+        // @ts-ignore types may differ across browsers
+        browser.action.setBadgeText(tabId ? { text, tabId } : { text })
+        try { (browser.action as any).setBadgeBackgroundColor?.({ color: '#4f46e5' }) } catch {}
+      }
+    } catch {}
+  }
+
+  function waitForPort(timeoutMs = 1500): Promise<boolean> {
+    const start = Date.now()
+    return new Promise((resolve) => {
+      const id = setInterval(() => {
+        if (offscreenPort) { clearInterval(id); resolve(true) }
+        else if (Date.now() - start > timeoutMs) { clearInterval(id); resolve(false) }
+      }, 50)
+    })
+  }
+
+  async function ensureOffscreen() {
+    if (offscreenPort) return
+    try {
+      // @ts-ignore
+      if (chrome?.offscreen) {
+        try {
+          // @ts-ignore check if exists
+          // no hasDocument in types; try create guarded
+          await chrome.offscreen.createDocument({
+            url: '/offscreen.html',
+            reasons: ['USER_MEDIA' as any],
+            justification: 'Screenshot capture for SlidePrint',
+          })
+        } catch {}
+      }
+    } catch {}
+  }
+
+  // Accept a connection from the offscreen document
+  try {
+    chrome.runtime.onConnect.addListener((port) => {
+      if (port.name === 'offscreen') {
+        offscreenPort = port
+        port.onDisconnect.addListener(() => { if (offscreenPort === port) offscreenPort = null })
+      }
+    })
   } catch {}
+
+  // With action popup, clicking the icon is handled by the browser.
+  // We ensure the offscreen document exists on popup open instead.
 
   browser.runtime.onMessage.addListener(onMessage({
+    'popup:opened': async () => {
+      // Prepare offscreen doc in user-gesture context when possible
+      await ensureOffscreen()
+      return true as const
+    },
     'sidepanel:opened': async () => {
       // Clear slides at side panel open (fresh session)
       currentSlides = [];
       return true as const;
     },
+    'select:start': async () => {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id || !tab?.url) return false as const
+      const ready = await ensureContentReady(tab.id)
+      if (!ready) return false as const
+      try {
+        const rect = await sendToTab(tab.id, 'content:select-area')
+        const origin = new URL(tab.url).origin
+        const key = `selection:${origin}`
+        await browser.storage.local.set({ [key]: rect })
+      } catch {
+        return false as const
+      }
+      // Attempt to reopen the popup immediately after selection completes
+      try {
+        // @ts-ignore
+        if (chrome?.action?.openPopup) await chrome.action.openPopup()
+      } catch {}
+      return true as const
+    },
     'auto:capture': async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return false as const;
       currentSlides = [];
+      updateBadge(0, tab.id)
       const ready = await ensureContentReady(tab.id);
       if (!ready) return false as const;
       await sendToTab(tab.id, 'content:start-capture');
       return true as const;
     },
-    'content:capture-page': async (data) => {
-      const image = await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 });
-      currentSlides.push({ img: image, dimensions: data?.dimensions || null });
+    'select:done': async (rect, sender) => {
+      try {
+        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+        const url = tab?.url
+        if (url) {
+          const origin = new URL(url).origin
+          const key = `selection:${origin}`
+          await browser.storage.local.set({ [key]: rect })
+        }
+      } catch {}
+      try { if (chrome?.action?.openPopup) await chrome.action.openPopup() } catch {}
+      return true as const
+    },
+    'content:capture-page': async (data, sender) => {
+      try {
+        // Prefer offscreen port when available
+        if (offscreenPort) {
+          const id = Math.random().toString(36).slice(2)
+          const result: { ok: boolean, image?: string } = await new Promise((resolve) => {
+            const onMsg = (msg: any) => {
+              if (msg && msg.id === id) {
+                offscreenPort?.onMessage.removeListener(onMsg)
+                resolve(msg)
+              }
+            }
+            offscreenPort?.onMessage.addListener(onMsg)
+            offscreenPort?.postMessage({ type: 'capture', id })
+          })
+          if (!result.ok || !result.image) throw new Error('offscreen capture failed')
+          currentSlides.push({ img: result.image, dimensions: data?.dimensions || null });
+        } else {
+          const image = await captureVisible()
+          currentSlides.push({ img: image, dimensions: data?.dimensions || null });
+        }
+        let tabId: number | undefined = (sender && 'tab' in sender) ? (sender as any).tab?.id as number | undefined : undefined
+        if (!tabId) {
+          try { const [active] = await browser.tabs.query({ active: true, currentWindow: true }); tabId = active?.id } catch {}
+        }
+        updateBadge(undefined, tabId)
+      } catch (e) {
+        console.warn('captureVisibleTab failed', e)
+        try {
+          await browser.runtime.sendMessage({ event: 'capture:need-permission' })
+        } catch {}
+        return true as const
+      }
       try { await browser.runtime.sendMessage({ event: 'slides:updated' }); } catch {}
       if (data?.done) {
         await browser.tabs.create({ url: browser.runtime.getURL('/output.html') });
@@ -86,6 +179,10 @@ export default defineBackground(() => {
       if (idx >= 0 && idx < currentSlides.length) {
         currentSlides.splice(idx, 1);
       }
+      try {
+        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) updateBadge(undefined, tab.id); else updateBadge();
+      } catch { updateBadge() }
       return currentSlides;
     },
     'slides:move': async (data) => {
@@ -101,11 +198,15 @@ export default defineBackground(() => {
     },
     'reset': async () => {
       currentSlides = [];
+      try {
+        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) updateBadge(0, tab.id); else updateBadge(0);
+      } catch { updateBadge(0) }
       return true as const;
     }
   }))
 
-  // Keyboard command handler to open side panel and start selection
+  // Keyboard command handler to start selection and reopen popup on finish
   try {
     // @ts-ignore chrome may not exist in all browsers
     if (typeof chrome !== 'undefined' && chrome.commands) {
@@ -113,31 +214,42 @@ export default defineBackground(() => {
       chrome.commands.onCommand.addListener(async (command: string) => {
         const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
         if (!tab?.id) return
-        if (command === 'toggle-sidepanel-select') {
+        if (command === 'toggle-popup-select') {
           if (!tab.url) return
-          try {
-            await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] })
-          } catch {}
-          try {
-            // Open side panel for current window
-            // @ts-ignore
-            if (chrome.sidePanel) {
-              // @ts-ignore
-              await chrome.sidePanel.setOptions({ enabled: true, path: '/sidepanel.html', tabId: tab.id })
-              // @ts-ignore
-              await chrome.sidePanel.open({ windowId: tab.windowId })
-            }
-          } catch {}
-
-          // Ask the page to select area and persist it per-origin
+          try { await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] }) } catch {}
           try {
             const rect = await sendToTab(tab.id, 'content:select-area')
             const origin = new URL(tab.url).origin
             const key = `selection:${origin}`
-            await browser.storage.local.set({ [key]: rect?.result || rect })
+            await browser.storage.local.set({ [key]: rect })
           } catch {}
+          try { if (chrome?.action?.openPopup) await chrome.action.openPopup() } catch {}
         }
       })
     }
   } catch {}
 });
+  async function captureVisible(): Promise<string> {
+    try {
+      return await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 })
+    } catch (e1) {
+      try {
+        const [active] = await browser.tabs.query({ active: true, currentWindow: true })
+        // @ts-ignore chrome may exist
+        if (typeof chrome !== 'undefined' && chrome.tabs && active?.windowId != null) {
+          return await new Promise<string>((resolve, reject) => {
+            try {
+              // @ts-ignore callback style
+              chrome.tabs.captureVisibleTab(active.windowId, { format: 'jpeg', quality: 90 }, (dataUrl: string | undefined) => {
+                // @ts-ignore
+                const err = chrome.runtime?.lastError
+                if (!dataUrl || err) reject(err || new Error('captureVisibleTab returned empty'))
+                else resolve(dataUrl)
+              })
+            } catch (err) { reject(err) }
+          })
+        }
+      } catch {}
+      throw e1
+    }
+  }

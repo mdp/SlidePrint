@@ -1,0 +1,33 @@
+{
+  "button_selectArea": "Select Area",
+  "button_capture": "Capture",
+  "button_clear": "Clear",
+  "button_printSave": "Print/Save",
+  "button_autoCapture": "Auto Capture",
+
+  "tooltip_openPanelSelect": "Open popup + select area",
+  "tooltip_shiftK": "On page: press Shift+K to capture",
+
+  "instr_auto_step1": "Click <b>Auto Capture</b> to capture all slides automatically.",
+  "instr_auto_stepManual1": "Alternatively, for manual capture: click <b>Select Area</b> and drag on the page (Esc to cancel).",
+  "instr_auto_stepManual2": "Then navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page).",
+  "instr_auto_step4": "Reorder or delete below, then <b>Print / Save</b> to print or save as PDF.",
+
+  "instr_manual_step1": "Click <b>Select Area</b> and drag on the page (Esc to cancel).",
+  "instr_manual_step2": "Navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page).",
+  "instr_manual_step3": "Reorder or delete below, then <b>Print / Save</b> to print or save as PDF.",
+
+  "empty_noSlides": "No slides captured yet.",
+  "empty_howTo": "Click Select Area, drag on the page, then Capture each slide.",
+
+  "overlay_hint": "Drag to select an area. Press Esc to cancel.",
+
+  "auto_status": "Auto capturing… $1/$2",
+  "auto_done": "Auto capture complete",
+
+  "warning_cannotSelectOnPage": "Cannot select on this page type",
+
+  "label_language": "Language",
+  "lang_en": "English",
+  "lang_zh_TW": "Traditional Chinese"
+}

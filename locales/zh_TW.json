@@ -1,0 +1,34 @@
+{
+  "button_selectArea": "選擇區域",
+  "button_capture": "擷取",
+  "button_clear": "清除",
+  "button_printSave": "列印／儲存",
+  "button_autoCapture": "自動擷取",
+
+  "tooltip_openPanelSelect": "開啟面板並選擇區域",
+  "tooltip_shiftK": "在頁面上按 Shift+K 進行擷取",
+
+  "instr_auto_step1": "點擊「自動擷取」，自動擷取所有投影片。",
+  "instr_auto_stepManual1": "或使用手動：點擊「選擇區域」並在頁面上拖曳（Esc 取消）。",
+  "instr_auto_stepManual2": "接著切換頁面並於每頁點擊「擷取」（或在頁面按 Shift+K）。",
+  "instr_auto_step4": "於下方重新排序或刪除，然後點擊「列印／儲存」。",
+
+  "instr_manual_step1": "點擊「選擇區域」並在頁面上拖曳（Esc 取消）。",
+  "instr_manual_step2": "切換頁面並於每頁點擊「擷取」（或在頁面按 Shift+K）。",
+  "instr_manual_step3": "於下方重新排序或刪除，然後點擊「列印／儲存」。",
+
+  "empty_noSlides": "尚未擷取任何投影片。",
+  "empty_howTo": "點擊「選擇區域」，在頁面上拖曳，接著依序按「擷取」。",
+
+  "overlay_hint": "拖曳以選取區域。按 Esc 取消。",
+
+  "auto_status": "自動擷取中… $1/$2",
+  "auto_done": "自動擷取完成",
+
+  "warning_cannotSelectOnPage": "此頁面無法選取區域",
+
+  "label_language": "語言",
+  "lang_en": "英文",
+  "lang_zh_TW": "繁體中文"
+}
+

@@ -8,8 +8,8 @@ type Envelope = { result: any; error: any };
 
 // Low-level async envelope wrapper for runtime.onMessage listeners
 export function asyncMessageHandler<T>(
-  fn: (request: { event: string; data?: T }, sender: browser.runtime.MessageSender) => Promise<any>
-): (request: any, sender: browser.runtime.MessageSender, sendResponse: (response: any) => void) => any {
+  fn: (request: { event: string; data?: T }, sender: any) => Promise<any>
+): (request: any, sender: any, sendResponse: (response: any) => void) => any {
   return (request, sender, sendResponse) => {
     if (DEBUG) console.log("asyncMessageHandler:", request);
     fn(request, sender)
@@ -61,7 +61,7 @@ export async function sendToBg<E extends keyof MessageMap>(
 }
 
 export function onMessage(handlers: Partial<{
-  [E in keyof MessageMap]: (data: MessageMap[E]['req'], sender: browser.runtime.MessageSender) => Promise<MessageMap[E]['res']> | MessageMap[E]['res']
+  [E in keyof MessageMap]: (data: MessageMap[E]['req'], sender: any) => Promise<MessageMap[E]['res']> | MessageMap[E]['res']
 }>) {
   return asyncMessageHandler<any>(async (req, sender) => {
     const key = req?.event as keyof MessageMap;
@@ -81,8 +81,8 @@ function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> 
 // Shared readiness util ----------------------------------------------------
 
 export async function ensureContentReady(tabId: number, opts?: { retries?: number; delayMs?: number; inject?: boolean }): Promise<boolean> {
-  const retries = opts?.retries ?? 8;
-  const delayMs = opts?.delayMs ?? 160;
+  const retries = opts?.retries ?? 6;
+  const delayMs = opts?.delayMs ?? 100;
   const inject = opts?.inject ?? true;
   for (let i = 0; i < retries; i++) {
     try {

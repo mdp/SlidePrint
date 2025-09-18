@@ -39,7 +39,7 @@ export const handler: HandlerFn = async () => {
       getTotal: getSlideCount,
       getCurrent: getCurrent,
       getDimensions: () => getDimensions(),
-      next: () => document.dispatchEvent(new SpecialKeyboardEvent('keydown', { key: 'ArrowRight', target: document.body } as any)),
+      next: () => { document.dispatchEvent(new SpecialKeyboardEvent('keydown', { key: 'ArrowRight', target: document.body } as any)) },
       debounceAfterNextMs: 600,
     }
     await runAutoCapture(adapter)
