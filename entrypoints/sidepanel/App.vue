@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture, getCounts } from '../../utils/messageHandling'
+import { capturePageMessage, outputReady, selectArea, openOutput, removeSlide, moveSlide, autoCapture, getCounts, ensureContentReady } from '../../utils/messageHandling'
 import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
 
@@ -47,20 +47,7 @@ async function refreshSlides() {
   thumbs.value = results
 }
 
-async function ensureContentReady(tabId: number) {
-  // Try a quick ping; if it fails, inject and retry a few times
-  for (let i = 0; i < 8; i++) {
-    try {
-      const res = await browser.tabs.sendMessage(tabId, { event: 'content:ready' })
-      if (res?.result === true || res === true) return
-    } catch {}
-    try {
-      await browser.scripting.executeScript({ target: { tabId }, files: ['injected.js'] })
-    } catch {}
-    await new Promise(r => setTimeout(r, 180))
-  }
-  throw new Error('Content script not ready')
-}
+// readiness now provided by utils.ensureContentReady
 
 async function doSelect() {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -71,7 +58,8 @@ async function doSelect() {
   }
   busy.value = true
   try {
-    await ensureContentReady(tab.id)
+    const ready = await ensureContentReady(tab.id)
+    if (!ready) throw new Error('Content script not ready')
     let rect: DOMRect
     try {
       rect = await selectArea(tab.id)
@@ -134,11 +122,16 @@ onMounted(async () => {
     // Do not prefill selection from storage on load; wait for user action or updates
 
     // Watch for updates from background (e.g., keyboard shortcut flow)
-    browser.storage.onChanged.addListener((changes, area) => {
+    const onStorageChanged = (changes: Record<string, any>, area: any) => {
       if (area !== 'local') return
       if (changes[key]) {
         selection.value = changes[key].newValue
       }
+    }
+    browser.storage.onChanged.addListener(onStorageChanged)
+
+    onUnmounted(() => {
+      try { browser.storage.onChanged.removeListener(onStorageChanged) } catch {}
     })
   }
   await refreshSlides()
@@ -227,14 +220,11 @@ async function doAutoCapture() {
   try {
     autoBusy.value = true
     autoStatus.value = 'Auto capturing…'
-  const onOutputOpened = async (msg: any) => {
+    const onOutputOpened = async (msg: any) => {
       if (msg?.event === 'output:opened') {
-        if (autoInterval) clearInterval(autoInterval)
-        autoInterval = null
         autoBusy.value = false
         autoStatus.value = 'Auto capture complete'
         await refreshSlides()
-        try { browser.runtime.onMessage.removeListener(onOutputOpened) } catch {}
       }
     }
     const onAutoProgress = (msg: any) => {
@@ -252,10 +242,8 @@ async function doAutoCapture() {
     } catch {}
     await autoCapture()
   } finally {
-    if (autoInterval) clearInterval(autoInterval)
-    autoInterval = window.setInterval(async () => {
-      await refreshSlides()
-    }, 800)
+    try { browser.runtime.onMessage.removeListener(onOutputOpened) } catch {}
+    try { browser.runtime.onMessage.removeListener(onAutoProgress) } catch {}
   }
 }
 </script>
@@ -266,9 +254,15 @@ async function doAutoCapture() {
       <div class="py-2">
         <h1 class="font-semibold text-slate-900">SlidePrint</h1>
         <div class="mt-1 grid grid-cols-1 md:grid-cols-[1fr_auto] md:items-start gap-2">
-          <ol class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
+          <ol v-if="isAutoSupported" class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
+            <li>Click <b>Auto Capture</b> to capture all slides automatically.</li>
+            <li>Alternatively, for manual capture: click <b>Select Area</b> and drag on the page (Esc to cancel).</li>
+            <li>Then navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page).</li>
+            <li>Reorder or delete below, then <b>Print / Save</b> to print or save as PDF.</li>
+          </ol>
+          <ol v-else class="list-decimal pl-5 text-xs text-slate-600 space-y-0.5">
             <li>Click <b>Select Area</b> and drag on the page (Esc to cancel).</li>
-            <li>Navigate and click <b>Capture</b> for each slide.</li>
+            <li>Navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page).</li>
             <li>Reorder or delete below, then <b>Print / Save</b> to print or save as PDF.</li>
           </ol>
           <div class="hidden md:flex items-center gap-2">

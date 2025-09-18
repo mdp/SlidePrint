@@ -1,5 +1,5 @@
 import { findHandlerFor, findCountsFor } from '../handlers';
-import { asyncMessageHandler } from '../utils/messageHandling';
+import { onMessage } from '../utils/messageHandling';
 import { capturePageMessage } from '../utils/messageHandling';
 import { fixHiDPI } from '../utils/hidpi';
 
@@ -7,35 +7,24 @@ export default defineUnlistedScript({
   main() {
     const handler = findHandlerFor(window.location.href)
 
-    browser.runtime.onMessage.addListener(asyncMessageHandler<null>(async (request, _sender) => {
-      // Site-specific auto-capture for supported sites
-      if (request.event === 'content:start-capture' && handler) {
-        try {
-          await handler(window.document)
-        } catch (e) {
-          console.log("Content Handler Error:", e)
+    browser.runtime.onMessage.addListener(onMessage({
+      'content:start-capture': async () => {
+        if (handler) {
+          try { await handler(window.document) } catch (e) { console.log('Content Handler Error:', e) }
         }
-        return true
-      }
-
-      // Generic selection flow for any site
-      if (request.event === 'content:select-area') {
+        return true as const
+      },
+      'content:select-area': async () => {
         const rect = await createSelectionOverlay()
         const fixed = fixHiDPI(rect)
         return fixed
-      }
-
-      if (request.event === 'content:ready') {
-        return true
-      }
-
-      if (request.event === 'content:get-counts') {
+      },
+      'content:ready': async () => true as const,
+      'content:get-counts': async () => {
         const countsFn = findCountsFor(window.location.href)
         if (!countsFn) return null
         return countsFn()
-      }
-
-      return false
+      },
     }))
 
     // Page-level quick capture: Shift+K captures using saved selection for this origin

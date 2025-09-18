@@ -1,5 +1,5 @@
 import { Slide } from "../types/Slide";
-import { MessageData, asyncMessageHandler } from "../utils/messageHandling";
+import { onMessage, ensureContentReady, sendToTab } from "../utils/messageHandling";
 
 export default defineBackground(() => {
   console.log('Hello background!', { id: browser.runtime.id });
@@ -45,72 +45,64 @@ export default defineBackground(() => {
     }
   } catch {}
 
-  browser.runtime.onMessage.addListener(asyncMessageHandler<MessageData>(async (request, _sender) => {
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (request.event === 'sidepanel:opened') {
+  browser.runtime.onMessage.addListener(onMessage({
+    'sidepanel:opened': async () => {
       // Clear slides at side panel open (fresh session)
-      currentSlides = []
-      return true
-    } else if (request.event === 'auto:capture') {
-      if (tab && tab.id) {
-        currentSlides = []
-        // Ensure content script is ready before we message it
-        const ensureReady = async () => {
-          for (let i = 0; i < 8; i++) {
-            try {
-              const ping = await browser.tabs.sendMessage(tab.id!, { event: 'content:ready' })
-              if (ping?.result === true || ping === true) return true
-            } catch {}
-            try { await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['injected.js'] }) } catch {}
-            await new Promise(r => setTimeout(r, 150))
-          }
-          return false
-        }
-        const ready = await ensureReady()
-        if (!ready) return false
-        // Kick off site-specific automated capture via content script
-        await browser.tabs.sendMessage(tab.id, { event: 'content:start-capture' })
-        return true
+      currentSlides = [];
+      return true as const;
+    },
+    'auto:capture': async () => {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return false as const;
+      currentSlides = [];
+      const ready = await ensureContentReady(tab.id);
+      if (!ready) return false as const;
+      await sendToTab(tab.id, 'content:start-capture');
+      return true as const;
+    },
+    'content:capture-page': async (data) => {
+      const image = await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 });
+      currentSlides.push({ img: image, dimensions: data?.dimensions || null });
+      try { await browser.runtime.sendMessage({ event: 'slides:updated' }); } catch {}
+      if (data?.done) {
+        await browser.tabs.create({ url: browser.runtime.getURL('/output.html') });
+        try { await browser.runtime.sendMessage({ event: 'output:opened' }); } catch {}
       }
-    } else if (request.event === 'content:capture-page') {
-      console.log("capture page", request)
-      const image = await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 })
-      currentSlides.push({ img: image, dimensions: request.data?.dimensions || null })
-      try { await browser.runtime.sendMessage({ event: 'slides:updated' }) } catch {}
-      if (request.data?.done) {
-        await browser.tabs.create({ url: browser.runtime.getURL('/output.html') })
-        try { await browser.runtime.sendMessage({ event: 'output:opened' }) } catch {}
-      }
-      return true
-    } else if (request && request.event === 'output:ready') {
-      return currentSlides
-    } else if (request && request.event === 'open:output') {
-      await browser.tabs.create({ url: browser.runtime.getURL('/output.html') })
-      return true
-    } else if (request && request.event === 'auto:progress') {
-      try { await browser.runtime.sendMessage({ event: 'auto:progress', data: request.data }) } catch {}
-      return true
-    } else if (request && request.event === 'slides:remove' && typeof request.data?.index === 'number') {
-      const idx = request.data.index
+      return true as const;
+    },
+    'output:ready': async () => {
+      return currentSlides;
+    },
+    'open:output': async () => {
+      await browser.tabs.create({ url: browser.runtime.getURL('/output.html') });
+      return true as const;
+    },
+    'auto:progress': async (data) => {
+      try { await browser.runtime.sendMessage({ event: 'auto:progress', data }); } catch {}
+      return true as const;
+    },
+    'slides:remove': async (data) => {
+      const idx = data?.index ?? -1;
       if (idx >= 0 && idx < currentSlides.length) {
-        currentSlides.splice(idx, 1)
+        currentSlides.splice(idx, 1);
       }
-      return currentSlides
-    } else if (request && request.event === 'slides:move' && typeof request.data?.from === 'number' && typeof request.data?.to === 'number') {
-      const from = request.data.from
-      let to = request.data.to
+      return currentSlides;
+    },
+    'slides:move': async (data) => {
+      const from = data?.from ?? -1;
+      let to = data?.to ?? -1;
       if (from >= 0 && from < currentSlides.length) {
-        if (to < 0) to = 0
-        if (to >= currentSlides.length) to = currentSlides.length - 1
-        const [item] = currentSlides.splice(from, 1)
-        currentSlides.splice(to, 0, item)
+        if (to < 0) to = 0;
+        if (to >= currentSlides.length) to = currentSlides.length - 1;
+        const [item] = currentSlides.splice(from, 1);
+        currentSlides.splice(to, 0, item);
       }
-      return currentSlides
-    } else if (request && request.event === 'reset') {
-      currentSlides = []
+      return currentSlides;
+    },
+    'reset': async () => {
+      currentSlides = [];
+      return true as const;
     }
-
-    return null
   }))
 
   // Keyboard command handler to open side panel and start selection
@@ -139,7 +131,7 @@ export default defineBackground(() => {
 
           // Ask the page to select area and persist it per-origin
           try {
-            const rect = await browser.tabs.sendMessage(tab.id, { event: 'content:select-area' })
+            const rect = await sendToTab(tab.id, 'content:select-area')
             const origin = new URL(tab.url).origin
             const key = `selection:${origin}`
             await browser.storage.local.set({ [key]: rect?.result || rect })
