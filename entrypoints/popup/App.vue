@@ -228,9 +228,8 @@ async function requestSitePermission() {
         <!-- Title -->
         <div class="title-container">
           <h1 class="title">
-            <span class="title-main">SLIDE</span>
-            <span class="title-accent">PRINT</span>
-            <span class="title-version">v{{ packageJson.version }}</span>
+            <span class="title-main">SLIDEPRINT</span>
+            <span class="title-version"><a href="https://github.com/mdp/slideprint">v{{ packageJson.version }}</a></span>
           </h1>
           <div class="title-border"></div>
         </div>
@@ -1018,6 +1017,21 @@ async function requestSitePermission() {
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
+}
+
+/* Version link: unstyled and dark grey */
+.title-version a {
+  color: #374151; /* dark grey */
+  text-decoration: none;
+}
+.title-version a:visited {
+  color: #374151;
+}
+.title-version a:hover,
+.title-version a:active,
+.title-version a:focus {
+  color: #374151;
+  text-decoration: none;
 }
 
 </style>

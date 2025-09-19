@@ -27,6 +27,12 @@ const addSlides = async (slides: Slide[]) => {
     }
 
     page.appendChild(img);
+
+    const footer = document.createElement("div");
+    footer.className = "footer";
+    footer.textContent = "Printed with SlidePrint - https://github.com/mdp/slideprint";
+    page.appendChild(footer);
+
     output.appendChild(page);
   }
   printPage()

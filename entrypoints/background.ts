@@ -8,21 +8,21 @@ export default defineBackground(() => {
   let currentSlides: Slide[] = []
   let offscreenPort: chrome.runtime.Port | null = null
 
-  function updateBadge(count?: number, tabId?: number) {
+  function updateBadge(count?: number) {
     const val = typeof count === 'number' ? count : currentSlides.length
     const text = val > 0 ? String(val) : ''
     try {
       // @ts-ignore
       if (chrome?.action?.setBadgeText) {
         // @ts-ignore
-        chrome.action.setBadgeText(tabId ? { text, tabId } : { text })
+        chrome.action.setBadgeText({ text })
         try { // optional; ignore if not supported
           // @ts-ignore
           chrome.action.setBadgeBackgroundColor?.({ color: '#4f46e5' })
         } catch {}
       } else if (browser?.action?.setBadgeText) {
         // @ts-ignore types may differ across browsers
-        browser.action.setBadgeText(tabId ? { text, tabId } : { text })
+        browser.action.setBadgeText({ text })
         try { (browser.action as any).setBadgeBackgroundColor?.({ color: '#4f46e5' }) } catch {}
       }
     } catch {}
@@ -103,8 +103,6 @@ export default defineBackground(() => {
     'auto:capture': async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return false as const;
-      currentSlides = [];
-      updateBadge(0, tab.id)
       const ready = await ensureContentReady(tab.id);
       if (!ready) return false as const;
       await sendToTab(tab.id, 'content:start-capture');
@@ -144,11 +142,7 @@ export default defineBackground(() => {
           const image = await captureVisible()
           currentSlides.push({ img: image, dimensions: data?.dimensions || null, preScaled: !!data?.preScaled });
         }
-        let tabId: number | undefined = (sender && 'tab' in sender) ? (sender as any).tab?.id as number | undefined : undefined
-        if (!tabId) {
-          try { const [active] = await browser.tabs.query({ active: true, currentWindow: true }); tabId = active?.id } catch {}
-        }
-        updateBadge(undefined, tabId)
+        updateBadge()
       } catch (e) {
         console.warn('captureVisibleTab failed', e)
         try {
@@ -179,10 +173,7 @@ export default defineBackground(() => {
       if (idx >= 0 && idx < currentSlides.length) {
         currentSlides.splice(idx, 1);
       }
-      try {
-        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) updateBadge(undefined, tab.id); else updateBadge();
-      } catch { updateBadge() }
+      updateBadge()
       return currentSlides;
     },
     'slides:move': async (data) => {
@@ -198,10 +189,7 @@ export default defineBackground(() => {
     },
     'reset': async () => {
       currentSlides = [];
-      try {
-        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) updateBadge(0, tab.id); else updateBadge(0);
-      } catch { updateBadge(0) }
+      updateBadge(0)
       return true as const;
     }
   }))

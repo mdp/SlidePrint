@@ -40,6 +40,11 @@
         display: block;
       }
 
+      /* Print footer (hidden on screen) */
+      .footer {
+        display: none;
+      }
+
       @media print {
         @page {
           size: landscape;
@@ -52,6 +57,29 @@
         #output, .page, .slide-img {
           page-break-inside: avoid;
           break-inside: avoid;
+        }
+        .page {
+          position: relative;
+          align-items: flex-start;
+          padding: 0.25in;
+        }
+        .slide-img {
+          width: 100%;
+          height: calc(100vh - 0.5in - 8px);
+          margin: 0;
+        }
+        .footer {
+          display: block;
+          position: absolute;
+          bottom: 8px;
+          left: 0;
+          right: 0;
+          text-align: center;
+          font-size: 8px;
+          line-height: 8px;
+          height: 8px;
+          padding-top: 1px;
+          color: #888;
         }
       }
     </style>
