@@ -11,7 +11,6 @@ export type MessageMap = {
 
   'output:ready': { req: void; res: Slide[] };
   'open:output': { req: void; res: true | boolean };
-  'sidepanel:opened': { req: void; res: true | boolean };
   'popup:opened': { req: void; res: true | boolean };
   'select:start': { req: void; res: true | boolean };
   'reset': { req: void; res: true | void };

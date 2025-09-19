@@ -75,11 +75,6 @@ export default defineBackground(() => {
       await ensureOffscreen()
       return true as const
     },
-    'sidepanel:opened': async () => {
-      // Clear slides at side panel open (fresh session)
-      currentSlides = [];
-      return true as const;
-    },
     'select:start': async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id || !tab?.url) return false as const

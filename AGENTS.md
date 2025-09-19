@@ -2,19 +2,25 @@
 
 ## Project Structure & Module Organization
 - `entrypoints/`: Extension entry points (`background.ts`, `popup/`, `injected.ts`, `output/`).
-- `handlers/`: Site-specific logic and router (`index.ts`) with tests in `handlers/__tests__/`.
-- `components/`: Vue 3 SFC UI pieces used by the popup/output.
-- `utils/` and `types/`: Shared helpers and TypeScript types (e.g., `utils/messageHandling.ts`, `types/Slide.ts`, `types/messages.ts`).
-- `assets/` and `public/`: Static styles/icons. `manifest.json` is at the root. Build config in `wxt.config.ts`.
+- `handlers/`: Site-specific logic and router (`index.ts`) with tests in `handlers/__tests__/`. Includes handlers for various sites (e.g., `handlers/docsend.ts`, `handlers/decksend.ts`, `handlers/brieflink.ts`, `handlers/pitchdotcom.ts`, `handlers/visibledotvc.ts`).
+- `components/`: Vue 3 SFC UI pieces (currently empty; UI components are primarily in `entrypoints/popup/`, and `entrypoints/output/`).
+- `utils/` and `types/`: Shared helpers and TypeScript types (e.g., `utils/messageHandling.ts`, `utils/autoCapture.ts`, `utils/imageCropping.ts`, `utils/i18n.ts`, `utils/hidpi.ts`, `utils/sendKeyEvent.ts`, `utils/sleep.ts`, `types/Slide.ts`, `types/messages.ts`).
+- `locales/`: Localization files (e.g., `locales/en.json`, `locales/de.json`, `locales/zh_CN.json`).
+- `assets/` and `public/`: Static styles/icons, locales, fonts, and icons. `manifest.json` is at the root. Build config in `wxt.config.ts`.
   - Theme colors live in `assets/tailwind.css` (CSS variables like `--color-brand`, `--color-accent`).
+  - Localized messages in `public/_locales/` (e.g., `public/_locales/en/messages.json`).
+  - Fonts and icons in `public/fonts/` and `public/icon/`.
 
 ## Build, Test, and Development Commands
 - `pnpm dev`: Start WXT in watch mode. Load the unpacked extension from `.output/chromium-mv3/` in Chrome.
 - `pnpm dev:firefox`: Same for Firefox (`.output/firefox-mv3/`).
 - `pnpm build`: Production build to `.output/*`.
+- `pnpm build:firefox`: Production build for Firefox to `.output/*`.
 - `pnpm zip`: Create a distributable archive.
+- `pnpm zip:firefox`: Create a distributable archive for Firefox.
 - `pnpm compile`: Type-check the project with `vue-tsc`.
 - `pnpm test`: Run unit tests with Vitest.
+- `pnpm postinstall`: Run `wxt prepare` after installing dependencies.
 
 ## Coding Style & Naming Conventions
 - Language: TypeScript + Vue 3. Use 2-space indentation and semicolons.
@@ -36,7 +42,7 @@
 - Prefer the declarative router style in `entrypoints/background.ts` and `entrypoints/injected.ts` instead of long if/else chains.
 - Broadcasts: keep one-way notifications as plain `runtime.sendMessage` without expecting a response (e.g., `slides:updated`, `output:opened`, `auto:progress`).
 - Listener lifecycle: always remove listeners on teardown/unmount.
-  - In Vue components (e.g., sidepanel), keep references and call corresponding `removeListener` in `onUnmounted`.
+  - In Vue components (e.g., popup), keep references and call corresponding `removeListener` in `onUnmounted`.
   - Avoid leaving polling intervals/timers running after flows complete.
 
 ### Adding a New Event
@@ -68,5 +74,5 @@
 - Validation: Include reproduction steps and note any permission/manifest changes.
 
 ## Security & Configuration Tips
-- Permissions are minimal (`activeTab`, `scripting`). Avoid adding new permissions or host matches without discussion.
+- Permissions are minimal (`activeTab`, `scripting`, `storage`). Avoid adding new permissions or host matches without discussion.
 - Never include secrets. Do not inject remote scripts; keep resources bundled.
