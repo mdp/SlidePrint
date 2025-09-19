@@ -10,14 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
+        uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
+        name: Install pnpm
         with:
           version: 10
-      - run: pnpm install
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
       - run: pnpm build
       - run: mv .output/chrome-mv3 slideprint
       - uses: montudor/action-zip@v1

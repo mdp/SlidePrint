@@ -2,10 +2,84 @@
   <head>
     <title>SlidePrint Output</title>
     <style>
-      @media print{
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+
+      #output {
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Each slide on its own page */
+      .page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        box-sizing: border-box;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        background: white;
+      }
+
+      /* Force a page break between slides, but not after the last one */
+      .page:not(:last-child) {
+        page-break-after: always;
+        break-after: page;
+      }
+
+      /* Scale image to fit within the page while preserving aspect ratio */
+      .slide-img {
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+        display: block;
+      }
+
+      /* Print footer (hidden on screen) */
+      .footer {
+        display: none;
+      }
+
+      @media print {
         @page {
           size: landscape;
           margin: 0;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+        }
+        #output, .page, .slide-img {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        .page {
+          position: relative;
+          align-items: flex-start;
+          padding: 0.25in;
+        }
+        .slide-img {
+          width: 100%;
+          height: calc(100vh - 0.5in - 8px);
+          margin: 0;
+        }
+        .footer {
+          display: block;
+          position: absolute;
+          bottom: 8px;
+          left: 0;
+          right: 0;
+          text-align: center;
+          font-size: 8px;
+          line-height: 8px;
+          height: 8px;
+          padding-top: 1px;
+          color: #888;
         }
       }
     </style>

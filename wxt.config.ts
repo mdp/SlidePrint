@@ -21,9 +21,11 @@ export default defineConfig({
     version: `${major}.${minor}.${patch}.${label}`,
     // semver is OK in "version_name"
     version_name: version,
+    default_locale: 'en',
     action: {
       default_title: 'SlidePrint',
     },
+    // Using action popup instead of side panel
     web_accessible_resources: [
       {
         "matches": [
@@ -35,6 +37,14 @@ export default defineConfig({
         ],
       }
     ],
-    permissions: [ "activeTab", "scripting" ],
+    permissions: [ "activeTab", "scripting", "storage" ],
+    commands: {
+      "toggle-popup-select": {
+        description: "Start selection and reopen popup",
+        suggested_key: {
+          default: "Alt+Shift+S"
+        }
+      }
+    },
   },
 });

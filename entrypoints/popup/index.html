@@ -1,14 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SlidePrint</title>
-    <meta name="manifest.type" content="browser_action" />
-    <link rel="stylesheet" href="~/assets/tailwind.css" />
+    <style>
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        background: #ffffff;
+        color: #1f2937;
+      }
+      /* Popup size for better usability */
+      body { 
+        width: 560px; 
+        min-width: 560px; 
+        overflow-y: auto; 
+      }
+      #app { 
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="./main.ts"></script>
   </body>
-</html>
+  </html>

@@ -1,7 +1,6 @@
 import { HandlerFinderFn, HandlerFn } from "."
-import { capturePageMessage } from "../utils/messageHandling"
 import { fixHiDPI } from "../utils/hidpi"
-import { sleep } from "../utils/sleep"
+import { runAutoCapture, parseCounter, AutoCaptureAdapter } from "../utils/autoCapture"
 
 
 class SpecialKeyboardEvent extends KeyboardEvent {
@@ -10,16 +9,10 @@ class SpecialKeyboardEvent extends KeyboardEvent {
   }
 }
 
-const getSlideCount = () => {
-  const countEl = document.querySelector('button[title="Next page"]')?.previousElementSibling
-  if (countEl) {
-    const countStr = (countEl as HTMLElement).innerText.split('/')[1].trim()
-    if (countStr) return parseInt(countStr, 10)
-  } else {
-    throw new Error("Unable to find count element")
-  }
-  return 0
-}
+const counterEl = () => document.querySelector('button[title="Next page"]')?.previousElementSibling as HTMLElement | null
+const readCounts = () => parseCounter(counterEl()?.innerText)
+const getSlideCount = () => readCounts()?.total || 0
+const getCurrent = () => readCounts()?.current || 0
 
 const getDimensions = () => {
   const imageElement = document.querySelectorAll("body > div > div > div.flex.flex-shrink-0.py-10 > div")[0]
@@ -35,11 +28,21 @@ export const getHandlerFor: HandlerFinderFn = (url: string) => {
 }
 
 export const handler: HandlerFn = async () => {
-    const slideCount = getSlideCount()
-    for(let slide=1; slide <= slideCount; slide++) {
-        const dimensions = getDimensions() || undefined
-        await capturePageMessage(slide === slideCount, dimensions)
-        document.dispatchEvent(new SpecialKeyboardEvent('keydown', {'key': 'ArrowRight', 'target': document.body}));
-        await sleep(600)
+    const adapter: AutoCaptureAdapter = {
+      ready: async () => {
+        const start = Date.now();
+        while (Date.now() - start < 3000) {
+          if (counterEl()) return;
+          await new Promise(r => setTimeout(r, 100));
+        }
+      },
+      getTotal: getSlideCount,
+      getCurrent: getCurrent,
+      getDimensions: () => getDimensions(),
+      next: () => { document.dispatchEvent(new SpecialKeyboardEvent('keydown', { key: 'ArrowRight', target: document.body } as any)) },
+      debounceAfterNextMs: 600,
     }
+    await runAutoCapture(adapter)
 }
+
+export const getCounts = () => readCounts()

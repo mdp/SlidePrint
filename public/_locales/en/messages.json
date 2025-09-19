@@ -1,0 +1,37 @@
+{
+  "button_selectArea": { "message": "Select Area" },
+  "button_capture": { "message": "Capture" },
+  "button_clear": { "message": "Clear" },
+  "button_printSave": { "message": "Print/Save" },
+  "button_autoCapture": { "message": "Auto Capture" },
+
+  "tooltip_openPanelSelect": { "message": "Open popup + select area" },
+  "tooltip_shiftK": { "message": "On page: press Shift+K to capture" },
+
+  "instr_auto_step1": { "message": "Click <b>Auto Capture</b> to capture all slides automatically." },
+  "instr_auto_stepManual1": { "message": "Alternatively, for manual capture: click <b>Select Area</b> and drag on the page (Esc to cancel)." },
+  "instr_auto_stepManual2": { "message": "Then navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page)." },
+  "instr_auto_step4": { "message": "Reorder or delete below, then <b>Print / Save</b> to print or save as PDF." },
+
+  "instr_manual_step1": { "message": "Click <b>Select Area</b> and drag on the page (Esc to cancel)." },
+  "instr_manual_step2": { "message": "Navigate and click <b>Capture</b> for each slide (or press <b>Shift+K</b> on the page)." },
+  "instr_manual_step3": { "message": "Reorder or delete below, then <b>Print / Save</b> to print or save as PDF." },
+
+  "empty_noSlides": { "message": "No slides captured yet." },
+  "empty_howTo": { "message": "Click Select Area, drag on the page, then Capture each slide." },
+
+  "overlay_hint": { "message": "Drag to select an area. Press Esc to cancel." },
+
+  "auto_status": {
+    "message": "Auto capturing… $1/$2",
+    "placeholders": { "current": { "content": "$1" }, "total": { "content": "$2" } }
+  },
+  "auto_done": { "message": "Auto capture complete" },
+
+  "warning_cannotSelectOnPage": { "message": "Cannot select on this page type" }
+  ,
+  "label_language": { "message": "Language" },
+  "lang_en": { "message": "English" },
+  "lang_zh_CN": { "message": "Simplified Chinese" },
+  "lang_de": { "message": "German" }
+}

@@ -1,0 +1,35 @@
+{
+  "button_selectArea": "选择区域",
+  "button_capture": "捕获",
+  "button_clear": "清除",
+  "button_printSave": "打印/保存",
+  "button_autoCapture": "自动捕获",
+
+  "tooltip_openPanelSelect": "打开弹窗并选择区域",
+  "tooltip_shiftK": "在页面上按 Shift+K 进行捕获",
+
+  "instr_auto_step1": "点击<b>自动捕获</b>以自动捕获所有幻灯片。",
+  "instr_auto_stepManual1": "或者手动：点击<b>选择区域</b>，在页面上拖动（Esc 取消）。",
+  "instr_auto_stepManual2": "然后浏览页面并为每页点击<b>捕获</b>（或在页面上按<b>Shift+K</b>）。",
+  "instr_auto_step4": "在下方重新排序或删除，然后<b>打印 / 保存</b>。",
+
+  "instr_manual_step1": "点击<b>选择区域</b>，在页面上拖动（Esc 取消）。",
+  "instr_manual_step2": "浏览页面并为每页点击<b>捕获</b>（或在页面上按<b>Shift+K</b>）。",
+  "instr_manual_step3": "在下方重新排序或删除，然后<b>打印 / 保存</b>。",
+
+  "empty_noSlides": "还没有捕获任何幻灯片。",
+  "empty_howTo": "点击选择区域，在页面上拖动，然后为每页点击捕获。",
+
+  "overlay_hint": "拖动以选择区域。按 Esc 取消。",
+
+  "auto_status": "自动捕获中… $1/$2",
+  "auto_done": "自动捕获完成",
+
+  "warning_cannotSelectOnPage": "此页面无法选择区域",
+
+  "label_language": "语言",
+  "lang_en": "英语",
+  "lang_zh_CN": "简体中文",
+  "lang_de": "德语"
+}
+
