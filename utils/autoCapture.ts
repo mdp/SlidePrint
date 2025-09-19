@@ -55,7 +55,7 @@ export async function runAutoCapture(adapter: AutoCaptureAdapter) {
     try { await browser.runtime.sendMessage({ event: 'auto:progress', data: { current, total } }) } catch {}
     const dims = adapter.getDimensions() || undefined;
     const isLast = i === remaining - 1;
-    await capturePageMessage(isLast, dims);
+    await capturePageMessage(isLast, dims, true);
 
     if (!isLast) {
       const prev = current;

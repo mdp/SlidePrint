@@ -1,37 +1,12 @@
 import { Slide } from "../../types/Slide";
 import { outputReady } from "../../utils/messageHandling";
 
-const cropImage = async (imgUri: string, dimensions: DOMRect): Promise<string> => {
-  console.log("Values in crop", dimensions);
-  const resize_canvas = document.createElement('canvas');
-  const orig_src = new Image();
-  orig_src.src = imgUri;
-  return await new Promise((resolve) => {
-    orig_src.onload = function () {
-      try {
-        resize_canvas.width = dimensions.width;
-        resize_canvas.height = dimensions.height;
-        const cnv = resize_canvas.getContext('2d');
-        cnv?.drawImage(orig_src, dimensions.x, dimensions.y, dimensions.width, dimensions.height, 0, 0, dimensions.width, dimensions.height);
-        const newimgUri = resize_canvas.toDataURL("image/jpeg").toString();
-        resolve(newimgUri);
-      }
-      catch (e) {
-        console.log("Couldn't crop image due to", e);
-        resolve(imgUri)
-      }
-    }
-  })
-}
 
 const addSlides = async (slides: Slide[]) => {
   var output = document.getElementById('output');
   if (!output) return
   for (const slide of slides) {
-    let image = slide.img
-    if (slide.dimensions) {
-      image = await cropImage(image, slide.dimensions)
-    }
+    const image = slide.img;
     var img = document.createElement("img");
     img.setAttribute("src", image);
     img.setAttribute("style", "width: 100%");

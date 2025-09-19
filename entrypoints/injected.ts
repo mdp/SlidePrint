@@ -41,7 +41,7 @@ export default defineUnlistedScript({
         const saved = await browser.storage.local.get(selKey)
         const rect = saved?.[selKey]
         if (rect) {
-          await capturePageMessage(false, rect as any)
+          await capturePageMessage(false, rect as any, false)
         }
       } catch (err) {
         console.log('Shift+K capture failed', err)

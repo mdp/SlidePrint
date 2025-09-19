@@ -139,10 +139,10 @@ export default defineBackground(() => {
             offscreenPort?.postMessage({ type: 'capture', id })
           })
           if (!result.ok || !result.image) throw new Error('offscreen capture failed')
-          currentSlides.push({ img: result.image, dimensions: data?.dimensions || null });
+          currentSlides.push({ img: result.image, dimensions: data?.dimensions || null, preScaled: !!data?.preScaled });
         } else {
           const image = await captureVisible()
-          currentSlides.push({ img: image, dimensions: data?.dimensions || null });
+          currentSlides.push({ img: image, dimensions: data?.dimensions || null, preScaled: !!data?.preScaled });
         }
         let tabId: number | undefined = (sender && 'tab' in sender) ? (sender as any).tab?.id as number | undefined : undefined
         if (!tabId) {

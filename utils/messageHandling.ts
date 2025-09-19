@@ -111,8 +111,8 @@ export async function startCaptureMessage(tabId: number) {
   return await sendToTab(tabId, 'content:start-capture');
 }
 
-export async function capturePageMessage(done: boolean, dimensions?: DOMRect) {
-  await sendToBg('content:capture-page', { done, dimensions: dimensions || null });
+export async function capturePageMessage(done: boolean, dimensions?: DOMRect, preScaled?: boolean) {
+  await sendToBg('content:capture-page', { done, dimensions: dimensions || null, preScaled });
 }
 
 export async function outputReady() {
