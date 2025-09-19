@@ -2,10 +2,56 @@
   <head>
     <title>SlidePrint Output</title>
     <style>
-      @media print{
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+
+      #output {
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Each slide on its own page */
+      .page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        box-sizing: border-box;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        background: white;
+      }
+
+      /* Force a page break between slides, but not after the last one */
+      .page:not(:last-child) {
+        page-break-after: always;
+        break-after: page;
+      }
+
+      /* Scale image to fit within the page while preserving aspect ratio */
+      .slide-img {
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+        display: block;
+      }
+
+      @media print {
         @page {
           size: landscape;
           margin: 0;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+        }
+        #output, .page, .slide-img {
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
       }
     </style>

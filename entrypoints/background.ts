@@ -231,7 +231,7 @@ export default defineBackground(() => {
 });
   async function captureVisible(): Promise<string> {
     try {
-      return await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 90 })
+      return await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 95 })
     } catch (e1) {
       try {
         const [active] = await browser.tabs.query({ active: true, currentWindow: true })
@@ -240,7 +240,7 @@ export default defineBackground(() => {
           return await new Promise<string>((resolve, reject) => {
             try {
               // @ts-ignore callback style
-              chrome.tabs.captureVisibleTab(active.windowId, { format: 'jpeg', quality: 90 }, (dataUrl: string | undefined) => {
+              chrome.tabs.captureVisibleTab(active.windowId, { format: 'jpeg', quality: 95 }, (dataUrl: string | undefined) => {
                 // @ts-ignore
                 const err = chrome.runtime?.lastError
                 if (!dataUrl || err) reject(err || new Error('captureVisibleTab returned empty'))

@@ -88,7 +88,7 @@ export const cropImageWithHiDPI = async (options: CropImageOptions): Promise<str
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, scaledX, scaledY, scaledWidth, scaledHeight, 0, 0, canvasWidth, canvasHeight);
         
-        resolve(canvas.toDataURL('image/jpeg'));
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
       } catch (error) {
         console.error('Error cropping image:', error);
         resolve(imgUri);

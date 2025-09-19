@@ -5,6 +5,7 @@ import { findHandlerFor } from '../../handlers'
 import type { Slide } from '../../types/Slide'
 import { useT, initI18n, setLocaleOverride } from '../../utils/i18n'
 import packageJson from '../../package.json'
+import { cropImageWithHiDPI } from '../../utils/imageCropping'
 
 const selection = ref<DOMRect | null>(null)
 const slides = ref<Slide[]>([])
@@ -25,7 +26,21 @@ const pendingAction = ref<null | 'select' | 'auto' | 'capture'>(null)
 
 async function refreshSlides() {
   slides.value = await outputReady()
-  thumbs.value = slides.value.map(s => s.img)
+  const cropped = await Promise.all(slides.value.map(async (s) => {
+    if (s.dimensions) {
+      try {
+        return await cropImageWithHiDPI({
+          imgUri: s.img,
+          dimensions: s.dimensions as unknown as DOMRect,
+          coordinatesAlreadyScaled: !!s.preScaled,
+        })
+      } catch {
+        return s.img
+      }
+    }
+    return s.img
+  }))
+  thumbs.value = cropped
 }
 
 async function doSelect() {
