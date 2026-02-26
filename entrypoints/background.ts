@@ -152,6 +152,45 @@ export default defineBackground(() => {
       }
       return true as const;
     },
+    'content:add-image': async (data, sender) => {
+      if (!data?.imageData) return true as const;
+      currentSlides.push({ img: data.imageData, dimensions: null, preScaled: true });
+      updateBadge()
+      try { await browser.runtime.sendMessage({ event: 'slides:updated' }); } catch {}
+      if (data?.done) {
+        await browser.tabs.create({ url: browser.runtime.getURL('/output.html') });
+        try { await browser.runtime.sendMessage({ event: 'output:opened' }); } catch {}
+      }
+      return true as const;
+    },
+    'content:capture-chunk': async (data, sender) => {
+      if (!data?.dimensions) throw new Error('No dimensions provided');
+
+      // Capture visible tab
+      let image: string;
+      if (offscreenPort) {
+        const id = Math.random().toString(36).slice(2)
+        const result: { ok: boolean, image?: string } = await new Promise((resolve) => {
+          const onMsg = (msg: any) => {
+            if (msg && msg.id === id) {
+              offscreenPort?.onMessage.removeListener(onMsg)
+              resolve(msg)
+            }
+          }
+          offscreenPort?.onMessage.addListener(onMsg)
+          offscreenPort?.postMessage({ type: 'capture', id })
+        })
+        if (!result.ok || !result.image) throw new Error('offscreen capture failed')
+        image = result.image
+      } else {
+        image = await captureVisible()
+      }
+
+      // Crop to dimensions
+      const dims = data.dimensions
+      const cropped = await cropImage(image, dims)
+      return cropped
+    },
     'output:ready': async () => {
       return currentSlides;
     },
@@ -212,6 +251,35 @@ export default defineBackground(() => {
     }
   } catch {}
 });
+
+  async function cropImage(imageDataUrl: string, dims: DOMRect): Promise<string> {
+    // Load the image
+    const response = await fetch(imageDataUrl);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+
+    // Create offscreen canvas for cropping
+    const canvas = new OffscreenCanvas(Math.round(dims.width), Math.round(dims.height));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+
+    // Draw the cropped portion
+    ctx.drawImage(
+      imageBitmap,
+      dims.x, dims.y, dims.width, dims.height,  // source rect
+      0, 0, dims.width, dims.height              // dest rect
+    );
+
+    // Convert to blob then to data URL
+    const croppedBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('FileReader failed'));
+      reader.readAsDataURL(croppedBlob);
+    });
+  }
+
   async function captureVisible(): Promise<string> {
     try {
       return await browser.tabs.captureVisibleTab({ format: 'jpeg', quality: 95 })

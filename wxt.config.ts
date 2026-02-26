@@ -11,6 +11,7 @@ const [major, minor, patch, label = '0'] = version
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  outDir: 'dist',
   modules: ['@wxt-dev/module-vue'],
   vite: () => ({
     plugins: [tailwindcss()],
