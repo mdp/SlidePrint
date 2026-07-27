@@ -5,8 +5,6 @@ export type MessageMap = {
   'content:ready': { req: void; res: true | boolean };
   'content:start-capture': { req: void; res: true | boolean };
   'content:capture-page': { req: { done?: boolean; dimensions?: DOMRect | null; preScaled?: boolean } | undefined; res: true | void };
-  'content:add-image': { req: { imageData: string; done?: boolean }; res: true | void };
-  'content:capture-chunk': { req: { dimensions: DOMRect }; res: string };
   'content:select-area': { req: void; res: DOMRect };
   'content:get-counts': { req: void; res: { current: number; total: number } | null };
   'select:done': { req: DOMRect; res: true | boolean };

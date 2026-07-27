@@ -2,22 +2,6 @@ import { Slide } from "../../types/Slide";
 import { outputReady } from "../../utils/messageHandling";
 import { cropImageWithHiDPI } from "../../utils/imageCropping";
 
-// Detect orientation from first image and set print page size
-async function setPageOrientation(firstImageSrc: string) {
-  return new Promise<void>((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const isPortrait = img.naturalHeight > img.naturalWidth
-      const orientation = isPortrait ? 'portrait' : 'landscape'
-      const style = document.createElement('style')
-      style.textContent = `@media print { @page { size: ${orientation}; } }`
-      document.head.appendChild(style)
-      resolve()
-    }
-    img.onerror = () => resolve() // Default to existing landscape
-    img.src = firstImageSrc
-  })
-}
 
 const addSlides = async (slides: Slide[]) => {
   var output = document.getElementById('output');
@@ -80,9 +64,5 @@ function printPage() {
 (async () => {
   const result = await outputReady()
   console.log(result)
-  // Set page orientation based on first image before adding slides
-  if (result.length > 0) {
-    await setPageOrientation(result[0].img)
-  }
   await addSlides(result)
 })()

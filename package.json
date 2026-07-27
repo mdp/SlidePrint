@@ -2,7 +2,7 @@
   "name": "SlidePrint",
   "description": "Print slides from any deck",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
