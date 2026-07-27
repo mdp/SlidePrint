@@ -46,8 +46,12 @@
       }
 
       @media print {
-        @page {
+        @page landscape-page {
           size: landscape;
+          margin: 0;
+        }
+        @page portrait-page {
+          size: portrait;
           margin: 0;
         }
         html, body {
@@ -62,6 +66,12 @@
           position: relative;
           align-items: flex-start;
           padding: 0.25in;
+        }
+        .page.landscape {
+          page: landscape-page;
+        }
+        .page.portrait {
+          page: portrait-page;
         }
         .slide-img {
           width: 100%;

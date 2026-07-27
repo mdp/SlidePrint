@@ -1,6 +1,7 @@
 import { Slide } from "../../types/Slide";
 import { outputReady } from "../../utils/messageHandling";
 import { cropImageWithHiDPI } from "../../utils/imageCropping";
+import { getPrintOrientation } from "../../utils/printOrientation";
 
 
 const addSlides = async (slides: Slide[]) => {
@@ -43,8 +44,12 @@ function printPage() {
     len = imgs.length,
     counter = 0;
 
-
-  function incrementCounter() {
+  function imageSettled(img: HTMLImageElement) {
+    if (img.naturalWidth && img.naturalHeight) {
+      img.closest(".page")?.classList.add(
+        getPrintOrientation(img.naturalWidth, img.naturalHeight)
+      );
+    }
     counter++;
     if ( counter === len ) {
       console.log( 'All images loaded!' );
@@ -54,9 +59,10 @@ function printPage() {
 
   for (const img of imgs) {
     if (img.complete) {
-      incrementCounter()
+      imageSettled(img)
     } else {
-      img.addEventListener( 'load', incrementCounter, false );
+      img.addEventListener('load', () => imageSettled(img), { once: true });
+      img.addEventListener('error', () => imageSettled(img), { once: true });
     }
   }
 }

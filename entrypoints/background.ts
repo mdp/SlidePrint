@@ -152,6 +152,17 @@ export default defineBackground(() => {
       }
       return true as const;
     },
+    'content:add-images': async (data) => {
+      const images = data?.images.filter((image) => image.startsWith('https://')) || [];
+      if (!images.length) throw new Error('No valid images provided');
+
+      currentSlides.push(...images.map((img) => ({ img, dimensions: null })));
+      updateBadge();
+      try { await browser.runtime.sendMessage({ event: 'slides:updated' }); } catch {}
+      await browser.tabs.create({ url: browser.runtime.getURL('/output.html') });
+      try { await browser.runtime.sendMessage({ event: 'output:opened' }); } catch {}
+      return true as const;
+    },
     'output:ready': async () => {
       return currentSlides;
     },
